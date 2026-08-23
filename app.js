@@ -1317,8 +1317,7 @@ document.addEventListener('click', (event) => {
   }
 
   const expandButton = event.target.closest('[data-expand]');
-  if (expandButton) {
-    if (state.multiSelect) return;
+  if (expandButton && !state.multiSelect) {
     event.stopPropagation();
     openLightbox(expandButton.dataset.expand);
     return;
