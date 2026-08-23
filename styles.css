@@ -589,6 +589,15 @@ select {
   object-fit: cover;
 }
 
+.asset-media .pdf-card-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 110px;
+  border: 0;
+  background: #fff;
+}
+
 .asset-media .pdf-cover {
   position: relative;
   display: flex;
@@ -898,6 +907,14 @@ select {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.row-thumb .pdf-card-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
 }
 
 .row-thumb .pdf-cover {

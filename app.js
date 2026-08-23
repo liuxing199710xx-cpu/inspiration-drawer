@@ -437,7 +437,9 @@ function renderMedia(asset, controls = false) {
   }
 
   if (asset.type === 'pdf') {
-    if (!controls) return renderPdfCover(asset);
+    if (!controls) {
+      return `<iframe class="pdf-card-frame" src="${asset.src}" title="${escapeHtml(asset.title)}" loading="lazy"></iframe>`;
+    }
     return `
       <div class="pdf-stage">
         <iframe class="pdf-frame" src="${asset.src}" title="${escapeHtml(asset.title)}"></iframe>
@@ -454,16 +456,6 @@ function renderMedia(asset, controls = false) {
   }
 
   return `<img src="${asset.src}" alt="${escapeHtml(asset.title)}" loading="lazy">`;
-}
-
-function renderPdfCover(asset) {
-  return `
-    <div class="pdf-cover">
-      <span class="pdf-icon">${icon('fileText')}</span>
-      <span class="pdf-format">PDF</span>
-      <span class="pdf-name">${escapeHtml(asset.title)}</span>
-      <span class="pdf-hint">${escapeHtml(asset.dimensions || '文档')}</span>
-    </div>`;
 }
 
 function renderCard(asset, index) {
