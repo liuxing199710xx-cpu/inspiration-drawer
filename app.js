@@ -28,6 +28,7 @@ const URL_PARAMS = new URLSearchParams(window.location.search);
 const VIEW_MODE = URL_PARAMS.has('view');
 const DEFAULT_PASSWORD = '123456';
 const STORAGE_KEY = 'inspirationDrawerDataV1';
+const UNLOCK_KEY = 'inspirationDrawerUnlocked';
 let editUnlocked = false;
 
 const TYPE_LABELS = {
@@ -1438,6 +1439,7 @@ authForm.addEventListener('submit', (event) => {
   event.preventDefault();
   if (authInput.value === getEditPassword()) {
     editUnlocked = true;
+    localStorage.setItem(UNLOCK_KEY, '1');
     authOverlay.hidden = true;
     authInput.value = '';
     authInput.classList.remove('error');
@@ -1561,9 +1563,10 @@ async function initApp() {
     renderLibrary();
     return;
   }
-  authOverlay.hidden = false;
+  editUnlocked = localStorage.getItem(UNLOCK_KEY) === '1';
+  authOverlay.hidden = editUnlocked;
   renderLibrary();
-  authInput.focus();
+  if (!editUnlocked) authInput.focus();
 }
 
 initApp();
