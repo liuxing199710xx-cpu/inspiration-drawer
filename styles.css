@@ -452,6 +452,14 @@ button {
   color: var(--accent);
 }
 
+.multi-btn {
+  width: auto;
+  height: 40px;
+  gap: 6px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
 .icon-btn svg {
   width: 18px;
   height: 18px;
