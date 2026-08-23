@@ -27,6 +27,7 @@ const ICONS = {
 const URL_PARAMS = new URLSearchParams(window.location.search);
 const VIEW_MODE = URL_PARAMS.has('view');
 const DEFAULT_PASSWORD = '123456';
+const STORAGE_KEY = 'inspirationDrawerDataV1';
 let editUnlocked = false;
 
 const TYPE_LABELS = {
@@ -290,6 +291,99 @@ function getEditPassword() {
   return DEFAULT_PASSWORD;
 }
 
+let uploadDBPromise = null;
+
+function getUploadDB() {
+  if (uploadDBPromise) return uploadDBPromise;
+  uploadDBPromise = new Promise((resolve, reject) => {
+    if (!window.indexedDB) {
+      reject(new Error('IndexedDB unavailable'));
+      return;
+    }
+    const request = window.indexedDB.open('inspirationDrawerDB', 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains('uploads')) {
+        db.createObjectStore('uploads', { keyPath: 'id' });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  return uploadDBPromise;
+}
+
+async function saveUploadBlob(id, file) {
+  const db = await getUploadDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('uploads', 'readwrite');
+    tx.objectStore('uploads').put({ id, blob: file });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function readUploadBlob(id) {
+  const db = await getUploadDB();
+  return new Promise((resolve, reject) => {
+    const request = db.transaction('uploads', 'readonly').objectStore('uploads').get(id);
+    request.onsuccess = () => resolve(request.result ? request.result.blob : null);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function removeUploadBlob(id) {
+  const db = await getUploadDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('uploads', 'readwrite');
+    tx.objectStore('uploads').delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+function persistState() {
+  if (VIEW_MODE) return;
+  try {
+    const savedAssets = state.assets.map((asset) => (
+      asset.srcKey ? { ...asset, src: `upload://${asset.srcKey}` } : asset
+    ));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      assets: savedAssets,
+      folderOrder: state.folderOrder,
+      folderNames: state.folderNames,
+      folderParents: state.folderParents
+    }));
+  } catch (error) {
+    // 本地空间不足时保留当前页面数据，不影响浏览。
+  }
+}
+
+async function loadPersistedState() {
+  let data = null;
+  try {
+    data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+  } catch (error) {
+    data = null;
+  }
+  if (!data || !Array.isArray(data.assets)) return;
+
+  const restoredAssets = [];
+  for (const asset of data.assets) {
+    if (asset.srcKey) {
+      const blob = await readUploadBlob(asset.srcKey).catch(() => null);
+      if (!blob) continue;
+      restoredAssets.push({ ...asset, src: URL.createObjectURL(blob) });
+    } else {
+      restoredAssets.push(asset);
+    }
+  }
+  state.assets = restoredAssets;
+  state.folderOrder = Array.isArray(data.folderOrder) ? data.folderOrder : FOLDER_ORDER.slice(2);
+  state.folderNames = data.folderNames || Object.fromEntries(FOLDER_ORDER.slice(2).map((folder) => [folder, folder]));
+  state.folderParents = data.folderParents || Object.fromEntries(FOLDER_ORDER.slice(2).map((folder) => [folder, null]));
+}
+
 function buildViewUrl() {
   const url = new URL(window.location.href);
   url.search = 'view=1';
@@ -339,6 +433,7 @@ function createFolderFromForm() {
   state.newFolderParent = null;
   folderModal.hidden = true;
   renderLibrary();
+  persistState();
   showToast('文件夹已创建');
 }
 
@@ -368,6 +463,7 @@ function confirmDeleteFolder() {
   state.deleteFolderTarget = null;
   deleteFolderModal.hidden = true;
   renderLibrary();
+  persistState();
   showToast('文件夹已删除');
 }
 
@@ -583,6 +679,7 @@ function saveFolderName(key) {
   state.folderNames[key] = name;
   state.editingFolder = null;
   renderLibrary();
+  persistState();
   showToast('文件夹已重命名');
 }
 
@@ -706,6 +803,7 @@ function saveAssetTitle(id = state.editingTitle, input = null) {
   asset.title = title;
   state.editingTitle = null;
   renderLibrary();
+  persistState();
   if (state.lightboxId) renderLightbox();
   showToast('文件名称已修改');
 }
@@ -796,6 +894,13 @@ function deleteAsset(id) {
   const list = visibleAssets();
   const index = list.findIndex((item) => item.id === id);
   const nextAsset = list[index + 1] || list[index - 1] || null;
+  const removed = state.assets.find((item) => item.id === id);
+  if (removed?.srcKey) {
+    removeUploadBlob(removed.srcKey).catch(() => {});
+  }
+  if (removed?.src && removed.src.startsWith('blob:')) {
+    URL.revokeObjectURL(removed.src);
+  }
   state.assets = state.assets.filter((item) => item.id !== id);
   state.confirmDelete = false;
   state.selectedId = nextAsset ? nextAsset.id : null;
@@ -805,6 +910,7 @@ function deleteAsset(id) {
     renderLightbox();
   }
   renderLibrary();
+  persistState();
   showToast('素材已删除');
 }
 
@@ -862,6 +968,7 @@ function toggleFavorite(id) {
   if (!asset) return;
   asset.favorite = !asset.favorite;
   renderLibrary();
+  persistState();
   if (state.lightboxId) renderLightbox();
   showToast(asset.favorite ? '已加入我的收藏' : '已取消收藏');
 }
@@ -989,13 +1096,16 @@ async function addFiles(fileList) {
     const src = URL.createObjectURL(file);
     const isPdf = isPdfFile(file);
     const isVideo = !isPdf && isVideoFile(file);
+    const assetId = `upload-${Date.now()}-${uploadSeq++}`;
     const common = {
-      id: `upload-${Date.now()}-${uploadSeq++}`,
+      id: assetId,
       title: file.name.replace(/\.[^.]+$/, '') || '未命名素材',
       src,
+      srcKey: assetId,
       added: todayISO(),
       favorite: false
     };
+    await saveUploadBlob(assetId, file).catch(() => {});
 
     if (isPdf) {
       state.assets.unshift({
@@ -1027,6 +1137,7 @@ async function addFiles(fileList) {
     });
   }
 
+  persistState();
   state.activeFolder = '全部素材';
   state.activeTag = null;
   state.activeType = 'all';
@@ -1207,7 +1318,10 @@ document.addEventListener('input', (event) => {
   const textarea = event.target.closest('[data-notes]');
   if (!textarea) return;
   const asset = state.assets.find((item) => item.id === textarea.dataset.notes);
-  if (asset) asset.notes = textarea.value;
+  if (asset) {
+    asset.notes = textarea.value;
+    persistState();
+  }
 });
 
 document.addEventListener('keydown', (event) => {
@@ -1440,7 +1554,8 @@ library.addEventListener('drop', (event) => {
   addFiles(event.dataTransfer.files);
 });
 
-function initApp() {
+async function initApp() {
+  await loadPersistedState();
   if (VIEW_MODE) {
     authOverlay.hidden = true;
     renderLibrary();
