@@ -440,6 +440,11 @@ button {
   background: var(--paper-deep);
 }
 
+.icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .icon-btn.active {
   border-color: var(--line);
   background: #fff;
@@ -694,6 +699,7 @@ select {
   display: grid;
   width: 26px;
   height: 26px;
+  padding: 0;
   place-items: center;
   border: 1.5px solid rgba(255, 255, 255, 0.92);
   border-radius: 6px;
@@ -701,6 +707,7 @@ select {
   color: rgba(255, 255, 255, 0.72);
   pointer-events: auto;
   box-shadow: 0 2px 8px rgba(10, 5, 4, 0.22);
+  appearance: none;
 }
 
 .multi-check.checked {

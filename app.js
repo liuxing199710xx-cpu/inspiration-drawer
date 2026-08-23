@@ -573,7 +573,7 @@ function renderCard(asset, index) {
     <article class="asset-card${selectedClass}" data-id="${asset.id}" tabindex="0" role="button" aria-label="${escapeHtml(asset.title)}">
       <div class="asset-media" data-expand="${asset.id}" style="aspect-ratio:${asset.ratio || '4 / 3'};--badge-color:${badgeColor}">
         ${state.multiSelect
-          ? `<span class="multi-check${selected ? ' checked' : ''}" aria-hidden="true">${icon('check')}</span>`
+          ? `<button class="multi-check${selected ? ' checked' : ''}" data-multi-toggle="${asset.id}" type="button" aria-label="选择 ${escapeHtml(asset.title)}">${icon('check')}</button>`
           : `<span class="asset-index">${String(index + 1).padStart(2, '0')}</span>`}
         <span class="type-badge">${TYPE_LABELS[asset.type]}</span>
         ${renderMedia(asset)}
@@ -595,7 +595,7 @@ function renderRow(asset, index) {
     <article class="asset-row${selectedClass}" data-id="${asset.id}" tabindex="0" role="button" aria-label="${escapeHtml(asset.title)}">
       <div class="row-thumb" data-expand="${asset.id}">
         ${renderMedia(asset)}
-        ${state.multiSelect ? `<span class="multi-check row-multi-check${selected ? ' checked' : ''}" aria-hidden="true">${icon('check')}</span>` : ''}
+        ${state.multiSelect ? `<button class="multi-check row-multi-check${selected ? ' checked' : ''}" data-multi-toggle="${asset.id}" type="button" aria-label="选择 ${escapeHtml(asset.title)}">${icon('check')}</button>` : ''}
       </div>
       <div class="row-body">
         <h3 class="row-title">${String(index + 1).padStart(2, '0')} · ${escapeHtml(asset.title)}</h3>
@@ -945,7 +945,8 @@ function updateModeUI() {
   shareBtn.hidden = VIEW_MODE;
   passwordBtn.hidden = VIEW_MODE;
   importBtn.hidden = VIEW_MODE;
-  multiSelectBtn.hidden = VIEW_MODE;
+  multiSelectBtn.hidden = false;
+  multiSelectBtn.disabled = VIEW_MODE;
   if (VIEW_MODE) authOverlay.hidden = true;
 }
 
@@ -1313,6 +1314,13 @@ document.addEventListener('click', (event) => {
     if (VIEW_MODE) return;
     event.stopPropagation();
     toggleFavorite(favoriteButton.dataset.fav);
+    return;
+  }
+
+  const multiToggleButton = event.target.closest('[data-multi-toggle]');
+  if (multiToggleButton) {
+    event.stopPropagation();
+    toggleMultiSelect(multiToggleButton.dataset.multiToggle);
     return;
   }
 
