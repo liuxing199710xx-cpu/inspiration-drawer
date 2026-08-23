@@ -589,6 +589,63 @@ select {
   object-fit: cover;
 }
 
+.asset-media .pdf-cover {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 110px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 18px 14px;
+  background: #F0ECE5;
+  color: #2A1E18;
+  text-align: center;
+}
+
+.pdf-icon {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  color: var(--accent);
+}
+
+.pdf-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.pdf-format {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 22px;
+}
+
+.pdf-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-hint {
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
 .asset-index {
   position: absolute;
   z-index: 2;
@@ -843,6 +900,26 @@ select {
   object-fit: cover;
 }
 
+.row-thumb .pdf-cover {
+  min-height: 0;
+  height: 100%;
+  gap: 3px;
+  padding: 8px;
+}
+
+.row-thumb .pdf-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.row-thumb .pdf-name {
+  font-size: 10px;
+}
+
+.row-thumb .pdf-hint {
+  font-size: 9px;
+}
+
 .row-thumb .font-tile {
   min-height: 0;
   height: 100%;
@@ -1024,6 +1101,42 @@ select {
   max-height: 52vh;
   object-fit: contain;
   background: #111;
+}
+
+.inspector-media .pdf-stage {
+  position: relative;
+  width: 100%;
+  height: 52vh;
+  background: #E4E1DC;
+}
+
+.inspector-media .pdf-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+
+.pdf-open {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: inline-flex;
+  height: 36px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border-radius: 7px;
+  background: rgba(10, 5, 4, 0.9);
+  color: #fff;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.pdf-open svg {
+  width: 15px;
+  height: 15px;
 }
 
 .inspector-body {
@@ -1415,6 +1528,29 @@ select {
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
   object-fit: contain;
   background: #000;
+}
+
+.lightbox-media .pdf-stage {
+  position: relative;
+  width: min(920px, 92vw);
+  height: 72vh;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #E4E1DC;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+.lightbox-media .pdf-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+
+.lightbox-media .pdf-open {
+  right: 14px;
+  bottom: 14px;
 }
 
 .lightbox-media .font-tile,
@@ -1839,6 +1975,16 @@ select {
   .lightbox-media video {
     max-width: 94vw;
     max-height: 68vh;
+  }
+
+  .lightbox-media .pdf-stage,
+  .inspector-media .pdf-stage {
+    width: 100%;
+    height: 58vh;
+  }
+
+  .lightbox-media .pdf-stage {
+    max-width: 94vw;
   }
 
   .lightbox-media .font-tile,

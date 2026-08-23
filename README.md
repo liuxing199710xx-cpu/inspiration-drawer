@@ -17,7 +17,8 @@
 - 素材文件名称也可以直接修改
 - 收藏喜欢的素材到“我的收藏”
 - 不需要的素材可以直接删除
-- 点击“导入素材”，或直接把图片、视频拖进素材墙
+- 点击“导入素材”，或直接把图片、视频、PDF 拖进素材墙
+- PDF 会自动归入“PDF 文档”收藏夹，可以放大查看、下载和重命名
 
 ## 查看与编辑
 
@@ -28,9 +29,9 @@
 
 ## 在线网址
 
-- 网站入口：https://inspiration-drawer-gray.vercel.app
-- 只读分享：https://inspiration-drawer-gray.vercel.app/index.html?view=1
+- 网站入口：https://liuxing199710xx-cpu.github.io/inspiration-drawer/
+- 只读分享：https://liuxing199710xx-cpu.github.io/inspiration-drawer/?view=1
 
 ## 示例素材
 
-页面里的示例图片来自当前工作区里的 PPT 案例截图，方便你先看到一个完整的素材库效果。导入的图片和视频只保存在当前页面会话中。
+页面里的示例图片来自当前工作区里的 PPT 案例截图，方便你先看到一个完整的素材库效果。导入的图片、视频和 PDF 只保存在当前页面会话中。

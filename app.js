@@ -17,6 +17,7 @@ const ICONS = {
   image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg>',
   video: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 8-6 4 6 4V8Z"></path><rect width="14" height="12" x="2" y="6" rx="2" ry="2"></rect></svg>',
   type: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" x2="15" y1="20" y2="20"></line><line x1="12" x2="12" y1="4" y2="20"></line></svg>',
+  fileText: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>',
   palette: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5"></circle><circle cx="17.5" cy="10.5" r=".5"></circle><circle cx="8.5" cy="7.5" r=".5"></circle><circle cx="6.5" cy="12.5" r=".5"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg>',
   download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>',
   link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>',
@@ -32,6 +33,7 @@ const TYPE_LABELS = {
   page: '页面版式',
   image: '视觉素材',
   video: '视频案例',
+  pdf: 'PDF 文档',
   font: '字体',
   color: '配色'
 };
@@ -40,16 +42,18 @@ const TYPE_BADGES = {
   page: 'var(--cobalt)',
   image: 'var(--accent)',
   video: 'var(--plum)',
+  pdf: 'var(--gold)',
   font: 'var(--gold)',
   color: 'var(--sage)'
 };
 
-const FOLDER_ORDER = ['全部素材', '我的收藏', '客户案例', '页面版式', '视觉素材', '视频案例', '字体样本', '配色研究'];
+const FOLDER_ORDER = ['全部素材', '我的收藏', '客户案例', '页面版式', '视觉素材', '视频案例', 'PDF 文档', '字体样本', '配色研究'];
 const TYPE_TABS = [
   { value: 'all', label: '全部' },
   { value: 'page', label: '页面版式' },
   { value: 'image', label: '视觉素材' },
   { value: 'video', label: '视频案例' },
+  { value: 'pdf', label: 'PDF' },
   { value: 'font', label: '字体' },
   { value: 'color', label: '配色' }
 ];
@@ -432,6 +436,15 @@ function renderMedia(asset, controls = false) {
     return `<div class="color-tile">${cells}</div>`;
   }
 
+  if (asset.type === 'pdf') {
+    if (!controls) return renderPdfCover(asset);
+    return `
+      <div class="pdf-stage">
+        <iframe class="pdf-frame" src="${asset.src}" title="${escapeHtml(asset.title)}"></iframe>
+        <a class="pdf-open" href="${asset.src}" target="_blank" rel="noopener">${icon('fileText')}<span>打开 PDF</span></a>
+      </div>`;
+  }
+
   if (asset.type === 'video') {
     const posterAttr = asset.poster ? ` poster="${asset.poster}"` : '';
     if (!controls && asset.poster) {
@@ -441,6 +454,16 @@ function renderMedia(asset, controls = false) {
   }
 
   return `<img src="${asset.src}" alt="${escapeHtml(asset.title)}" loading="lazy">`;
+}
+
+function renderPdfCover(asset) {
+  return `
+    <div class="pdf-cover">
+      <span class="pdf-icon">${icon('fileText')}</span>
+      <span class="pdf-format">PDF</span>
+      <span class="pdf-name">${escapeHtml(asset.title)}</span>
+      <span class="pdf-hint">${escapeHtml(asset.dimensions || '文档')}</span>
+    </div>`;
 }
 
 function renderCard(asset, index) {
@@ -608,12 +631,14 @@ function renderInspector() {
     return;
   }
 
-  const actionArea = (asset.type === 'image' || asset.type === 'page' || asset.type === 'video')
+  const actionArea = (asset.type === 'image' || asset.type === 'page' || asset.type === 'video' || asset.type === 'pdf')
     ? `<button class="action-btn" data-action="download" type="button">${icon('download')}<span>下载</span></button>`
     : '';
   const mediaZoom = asset.type === 'video'
     ? 'title="点击播放"'
-    : 'data-action="zoom" title="放大浏览"';
+    : asset.type === 'pdf'
+      ? ''
+      : 'data-action="zoom" title="放大浏览"';
   const actionButtons = VIEW_MODE ? '' : `
       <div class="inspector-actions">
         <button class="action-btn" data-action="zoom" type="button">${icon('expand')}<span>放大</span></button>
@@ -704,7 +729,7 @@ function renderLightbox() {
   const asset = state.assets.find((item) => item.id === state.lightboxId);
   if (!asset) return;
   const index = list.findIndex((item) => item.id === asset.id);
-  const actionArea = VIEW_MODE ? '' : (asset.type === 'image' || asset.type === 'page' || asset.type === 'video')
+  const actionArea = VIEW_MODE ? '' : (asset.type === 'image' || asset.type === 'page' || asset.type === 'video' || asset.type === 'pdf')
     ? `<button class="lightbox-action" data-action="download" type="button">${icon('download')}<span>下载</span></button>`
     : '';
 
@@ -863,7 +888,7 @@ function downloadAsset(asset) {
   const link = document.createElement('a');
   link.href = asset.src;
   const extMatch = asset.src.match(/\.[a-z0-9]+$/i);
-  const ext = extMatch ? extMatch[0] : (asset.type === 'video' ? '.mp4' : '.jpg');
+  const ext = extMatch ? extMatch[0] : (asset.type === 'video' ? '.mp4' : asset.type === 'pdf' ? '.pdf' : '.jpg');
   link.download = `${asset.title}${ext}`;
   document.body.appendChild(link);
   link.click();
@@ -942,38 +967,70 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function formatFileSize(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '—';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  const digits = value >= 100 ? 0 : value >= 10 ? 1 : 2;
+  return `${value.toFixed(digits)} ${units[unit]}`;
+}
+
 let uploadSeq = 0;
 
 async function addFiles(fileList) {
   if (VIEW_MODE) return;
   const isImageFile = (file) => file.type.startsWith('image/') || /\.(jpe?g|png|gif|webp|bmp|heic)$/i.test(file.name);
   const isVideoFile = (file) => file.type.startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(file.name);
-  const files = Array.from(fileList).filter((file) => isImageFile(file) || isVideoFile(file));
+  const isPdfFile = (file) => file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+  const files = Array.from(fileList).filter((file) => isImageFile(file) || isVideoFile(file) || isPdfFile(file));
   if (!files.length) {
-    showToast('只支持图片或视频文件');
+    showToast('只支持图片、视频或 PDF 文件');
     return;
   }
 
   for (const file of files) {
     const src = URL.createObjectURL(file);
-    const isVideo = isVideoFile(file);
+    const isPdf = isPdfFile(file);
+    const isVideo = !isPdf && isVideoFile(file);
+    const common = {
+      id: `upload-${Date.now()}-${uploadSeq++}`,
+      title: file.name.replace(/\.[^.]+$/, '') || '未命名素材',
+      src,
+      added: todayISO(),
+      favorite: false
+    };
+
+    if (isPdf) {
+      state.assets.unshift({
+        ...common,
+        type: 'pdf',
+        folder: 'PDF 文档',
+        tags: ['新加入', 'PDF'],
+        ratio: '3 / 4',
+        dimensions: formatFileSize(file.size),
+        notes: '从本地导入的 PDF 文档。'
+      });
+      continue;
+    }
+
     const size = isVideo ? await readVideoSize(src) : await readImageSize(src);
     const poster = isVideo ? await readVideoPoster(src) : null;
     const durationLabel = isVideo && Number.isFinite(size.duration) && size.duration > 0
       ? ` · ${size.duration.toFixed(1)}s`
       : '';
     state.assets.unshift({
-      id: `upload-${Date.now()}-${uploadSeq++}`,
-      title: file.name.replace(/\.[^.]+$/, '') || '未命名素材',
+      ...common,
       type: isVideo ? 'video' : 'image',
       folder: isVideo ? '视频案例' : '视觉素材',
       tags: isVideo ? ['新加入', '视频'] : ['新加入'],
-      src,
       poster,
       ratio: `${size.width} / ${size.height}`,
       dimensions: `${size.width} × ${size.height}${durationLabel}`,
-      added: todayISO(),
-      favorite: false,
       notes: isVideo ? '从本地导入的视频案例。' : '从本地导入的图片素材。'
     });
   }
