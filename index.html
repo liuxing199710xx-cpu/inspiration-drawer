@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>灵感抽屉 · 设计素材库</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="收藏夹">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">灵</div>
+        <div class="brand-copy">
+          <strong>灵感抽屉</strong>
+          <span>本地素材库</span>
+        </div>
+      </div>
+
+      <nav class="nav-section" aria-label="收藏夹">
+        <div class="nav-heading">
+          <span>收藏夹</span>
+          <span class="nav-heading-rule"></span>
+        </div>
+        <div class="folder-nav" id="folderNav"></div>
+      </nav>
+
+      <div class="sidebar-foot">
+        <button class="share-btn" id="newFolderBtn" type="button">
+          <span data-icon="folderPlus" aria-hidden="true"></span>
+          <span>新建文件夹</span>
+        </button>
+        <button class="share-btn" id="shareBtn" type="button">
+          <span data-icon="link" aria-hidden="true"></span>
+          <span>复制查看链接</span>
+        </button>
+        <button class="share-btn" id="passwordBtn" type="button">
+          <span data-icon="key" aria-hidden="true"></span>
+          <span>修改编辑密码</span>
+        </button>
+        <button class="import-btn" id="importBtn" type="button">
+          <span data-icon="upload" aria-hidden="true"></span>
+          <span>导入素材</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <main class="workspace">
+      <header class="topbar">
+        <button class="icon-btn menu-btn" id="menuBtn" type="button" title="打开收藏夹" aria-label="打开收藏夹">
+          <span data-icon="menu" aria-hidden="true"></span>
+        </button>
+
+        <div class="title-block">
+          <span class="eyebrow" id="contextLabel">素材库</span>
+          <div class="title-line">
+            <h1 id="viewTitle">全部素材</h1>
+            <span class="mode-badge" id="modeBadge" hidden></span>
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <div class="view-toggle" role="group" aria-label="视图切换">
+            <button class="icon-btn active" id="gridBtn" type="button" title="网格视图" aria-label="网格视图">
+              <span data-icon="grid" aria-hidden="true"></span>
+            </button>
+            <button class="icon-btn" id="listBtn" type="button" title="列表视图" aria-label="列表视图">
+              <span data-icon="list" aria-hidden="true"></span>
+            </button>
+          </div>
+          <select id="sortSelect" aria-label="排序方式">
+            <option value="newest">最新加入</option>
+            <option value="oldest">最早加入</option>
+            <option value="name">名称 A-Z</option>
+            <option value="type">按类型</option>
+          </select>
+        </div>
+      </header>
+
+      <div class="type-tabs" id="typeTabs" role="tablist" aria-label="素材类型"></div>
+
+      <section class="library" id="library">
+        <div class="drop-overlay" id="dropOverlay">
+          <span data-icon="upload" aria-hidden="true"></span>
+          <strong>松开即可加入</strong>
+        </div>
+
+        <div class="library-grid" id="libraryGrid"></div>
+        <div class="library-list" id="libraryList" hidden></div>
+
+        <div class="empty-state" id="emptyState" hidden>
+          <div class="empty-mark" aria-hidden="true"></div>
+          <h2>没有匹配的素材</h2>
+          <p>换一个关键词或筛选条件试试。</p>
+        </div>
+      </section>
+
+      <footer class="statusbar">
+        <span id="statusCount">0 项素材</span>
+        <span class="status-separator"></span>
+        <span>本地演示库</span>
+      </footer>
+    </main>
+
+    <aside class="inspector" id="inspector" aria-label="素材详情"></aside>
+  </div>
+
+  <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
+  <div class="toast" id="toast" role="status"></div>
+
+  <div class="auth-overlay" id="authOverlay" hidden>
+    <form class="auth-card" id="authForm">
+      <div class="auth-mark" aria-hidden="true">灵</div>
+      <h2>进入编辑模式</h2>
+      <p>输入编辑密码后管理素材</p>
+      <input type="password" id="authInput" placeholder="编辑密码" autocomplete="current-password">
+      <button class="auth-submit" type="submit">进入编辑</button>
+      <button class="auth-view" id="viewOnlyBtn" type="button">先以只读模式查看</button>
+    </form>
+  </div>
+
+  <div class="password-modal" id="passwordModal" hidden>
+    <form class="password-card" id="passwordForm">
+      <h2>修改编辑密码</h2>
+      <label>
+        <span>当前密码</span>
+        <input type="password" id="currentPasswordInput" autocomplete="current-password">
+      </label>
+      <label>
+        <span>新密码</span>
+        <input type="password" id="newPasswordInput" autocomplete="new-password">
+      </label>
+      <label>
+        <span>确认新密码</span>
+        <input type="password" id="confirmPasswordInput" autocomplete="new-password">
+      </label>
+      <div class="modal-actions">
+        <button class="modal-cancel" id="passwordCancel" type="button">取消</button>
+        <button class="modal-save" type="submit">保存</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="password-modal" id="folderModal" hidden>
+    <form class="password-card" id="folderForm">
+      <h2 id="folderModalTitle">新建文件夹</h2>
+      <p class="folder-modal-hint" id="folderModalHint"></p>
+      <label>
+        <span>文件夹名称</span>
+        <input type="text" id="folderNameInput" maxlength="20" autocomplete="off">
+      </label>
+      <div class="modal-actions">
+        <button class="modal-cancel" id="folderCancel" type="button">取消</button>
+        <button class="modal-save" type="submit">创建</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="password-modal" id="deleteFolderModal" hidden>
+    <div class="password-card">
+      <h2>删除文件夹</h2>
+      <p class="folder-modal-hint" id="deleteFolderText"></p>
+      <div class="modal-actions">
+        <button class="modal-cancel" id="deleteFolderCancel" type="button">取消</button>
+        <button class="modal-save danger" id="deleteFolderConfirm" type="button">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="放大浏览" hidden>
+    <button class="lightbox-close icon-btn" data-lightbox-close type="button" title="关闭" aria-label="关闭">
+      <span data-icon="close" aria-hidden="true"></span>
+    </button>
+    <button class="lightbox-nav prev" data-lightbox-prev type="button" title="上一个" aria-label="上一个">
+      <span data-icon="chevronLeft" aria-hidden="true"></span>
+    </button>
+    <button class="lightbox-nav next" data-lightbox-next type="button" title="下一个" aria-label="下一个">
+      <span data-icon="chevronRight" aria-hidden="true"></span>
+    </button>
+    <div class="lightbox-stage" id="lightboxStage"></div>
+    <div class="lightbox-footer" id="lightboxFooter"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
