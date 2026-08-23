@@ -20,6 +20,7 @@ const ICONS = {
   fileText: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>',
   palette: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5"></circle><circle cx="17.5" cy="10.5" r=".5"></circle><circle cx="8.5" cy="7.5" r=".5"></circle><circle cx="6.5" cy="12.5" r=".5"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg>',
   download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>',
+  checkSquare: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 11 3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>',
   link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>',
   key: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.5" cy="15.5" r="5.5"></circle><path d="m21 2-9.6 9.6"></path><path d="m15.5 7.5 3 3L22 7l-3-3"></path></svg>'
 };
@@ -220,6 +221,9 @@ const state = {
   inspectorOpen: false,
   lightboxId: null,
   confirmDelete: false,
+  multiSelect: false,
+  selectedIds: new Set(),
+  multiDeleteConfirm: false,
   editingTitle: null,
   editingFolder: null,
   newFolderParent: null,
@@ -244,6 +248,12 @@ const sortSelect = $('#sortSelect');
 const dropOverlay = $('#dropOverlay');
 const fileInput = $('#fileInput');
 const toast = $('#toast');
+const multiSelectBtn = $('#multiSelectBtn');
+const multiBar = $('#multiBar');
+const multiCount = $('#multiCount');
+const multiSelectAll = $('#multiSelectAll');
+const multiDelete = $('#multiDelete');
+const multiCancel = $('#multiCancel');
 const lightbox = $('#lightbox');
 const lightboxStage = $('#lightboxStage');
 const lightboxFooter = $('#lightboxFooter');
@@ -556,16 +566,19 @@ function renderMedia(asset, controls = false) {
 }
 
 function renderCard(asset, index) {
-  const selected = asset.id === state.selectedId ? ' selected' : '';
+  const selected = state.multiSelect ? state.selectedIds.has(asset.id) : asset.id === state.selectedId;
+  const selectedClass = selected ? ' selected' : '';
   const badgeColor = TYPE_BADGES[asset.type] || 'var(--ink-muted)';
   return `
-    <article class="asset-card${selected}" data-id="${asset.id}" tabindex="0" role="button" aria-label="${escapeHtml(asset.title)}">
+    <article class="asset-card${selectedClass}" data-id="${asset.id}" tabindex="0" role="button" aria-label="${escapeHtml(asset.title)}">
       <div class="asset-media" data-expand="${asset.id}" style="aspect-ratio:${asset.ratio || '4 / 3'};--badge-color:${badgeColor}">
-        <span class="asset-index">${String(index + 1).padStart(2, '0')}</span>
+        ${state.multiSelect
+          ? `<span class="multi-check${selected ? ' checked' : ''}" aria-hidden="true">${icon('check')}</span>`
+          : `<span class="asset-index">${String(index + 1).padStart(2, '0')}</span>`}
         <span class="type-badge">${TYPE_LABELS[asset.type]}</span>
         ${renderMedia(asset)}
-        ${VIEW_MODE ? '' : `<button class="favorite-btn${asset.favorite ? ' active' : ''}" data-fav="${asset.id}" type="button" title="${asset.favorite ? '取消收藏' : '收藏'}">${icon('heart')}</button>`}
-        <button class="expand-btn" data-expand="${asset.id}" type="button" title="放大浏览">${icon('expand')}</button>
+        ${state.multiSelect ? '' : VIEW_MODE ? '' : `<button class="favorite-btn${asset.favorite ? ' active' : ''}" data-fav="${asset.id}" type="button" title="${asset.favorite ? '取消收藏' : '收藏'}">${icon('heart')}</button>`}
+        ${state.multiSelect ? '' : `<button class="expand-btn" data-expand="${asset.id}" type="button" title="放大浏览">${icon('expand')}</button>`}
       </div>
       <div class="asset-meta">
         <span class="asset-title">${escapeHtml(asset.title)}</span>
@@ -575,11 +588,15 @@ function renderCard(asset, index) {
 }
 
 function renderRow(asset, index) {
-  const selected = asset.id === state.selectedId ? ' selected' : '';
+  const selected = state.multiSelect ? state.selectedIds.has(asset.id) : asset.id === state.selectedId;
+  const selectedClass = selected ? ' selected' : '';
   const tags = asset.tags.slice(0, 3).map((tag) => `<span class="row-tag">${escapeHtml(tag)}</span>`).join('');
   return `
-    <article class="asset-row${selected}" data-id="${asset.id}" tabindex="0" role="button" aria-label="${escapeHtml(asset.title)}">
-      <div class="row-thumb" data-expand="${asset.id}">${renderMedia(asset)}</div>
+    <article class="asset-row${selectedClass}" data-id="${asset.id}" tabindex="0" role="button" aria-label="${escapeHtml(asset.title)}">
+      <div class="row-thumb" data-expand="${asset.id}">
+        ${renderMedia(asset)}
+        ${state.multiSelect ? `<span class="multi-check row-multi-check${selected ? ' checked' : ''}" aria-hidden="true">${icon('check')}</span>` : ''}
+      </div>
       <div class="row-body">
         <h3 class="row-title">${String(index + 1).padStart(2, '0')} · ${escapeHtml(asset.title)}</h3>
         <div class="row-tags">${tags}</div>
@@ -588,7 +605,7 @@ function renderRow(asset, index) {
         <span>${TYPE_LABELS[asset.type]}</span>
         <span>${escapeHtml(asset.added)}</span>
       </div>
-      ${VIEW_MODE ? '' : `<button class="favorite-btn row-fav${asset.favorite ? ' active' : ''}" data-fav="${asset.id}" type="button" title="${asset.favorite ? '取消收藏' : '收藏'}">${icon('heart')}</button>`}
+      ${state.multiSelect || VIEW_MODE ? '' : `<button class="favorite-btn row-fav${asset.favorite ? ' active' : ''}" data-fav="${asset.id}" type="button" title="${asset.favorite ? '取消收藏' : '收藏'}">${icon('heart')}</button>`}
     </article>`;
 }
 
@@ -928,6 +945,7 @@ function updateModeUI() {
   shareBtn.hidden = VIEW_MODE;
   passwordBtn.hidden = VIEW_MODE;
   importBtn.hidden = VIEW_MODE;
+  multiSelectBtn.hidden = VIEW_MODE;
   if (VIEW_MODE) authOverlay.hidden = true;
 }
 
@@ -953,6 +971,7 @@ function renderLibrary() {
   renderTypeTabs();
   updateViewTitle();
   renderInspector();
+  updateMultiBar();
 }
 
 function selectAsset(id) {
@@ -972,6 +991,69 @@ function toggleFavorite(id) {
   persistState();
   if (state.lightboxId) renderLightbox();
   showToast(asset.favorite ? '已加入我的收藏' : '已取消收藏');
+}
+
+function updateMultiBar() {
+  const count = state.selectedIds.size;
+  multiCount.textContent = `已选 ${count} 项`;
+  multiDelete.textContent = state.multiDeleteConfirm ? `确认删除 ${count} 项` : '删除所选';
+  multiDelete.classList.toggle('confirm', state.multiDeleteConfirm);
+  multiBar.hidden = !state.multiSelect;
+}
+
+function toggleMultiSelectMode() {
+  if (VIEW_MODE) return;
+  state.multiSelect = !state.multiSelect;
+  state.selectedIds.clear();
+  state.multiDeleteConfirm = false;
+  state.inspectorOpen = false;
+  inspector.classList.remove('open');
+  multiSelectBtn.classList.toggle('active', state.multiSelect);
+  renderLibrary();
+  updateMultiBar();
+}
+
+function toggleMultiSelect(id) {
+  state.selectedIds.has(id) ? state.selectedIds.delete(id) : state.selectedIds.add(id);
+  state.multiDeleteConfirm = false;
+  renderLibrary();
+  updateMultiBar();
+}
+
+function selectAllVisible() {
+  visibleAssets().forEach((asset) => state.selectedIds.add(asset.id));
+  state.multiDeleteConfirm = false;
+  renderLibrary();
+  updateMultiBar();
+}
+
+function deleteSelectedAssets() {
+  if (VIEW_MODE) return;
+  if (!state.selectedIds.size) {
+    showToast('请先选择素材');
+    return;
+  }
+  if (!state.multiDeleteConfirm) {
+    state.multiDeleteConfirm = true;
+    renderLibrary();
+    updateMultiBar();
+    return;
+  }
+
+  state.assets.forEach((asset) => {
+    if (!state.selectedIds.has(asset.id)) return;
+    if (asset.srcKey) removeUploadBlob(asset.srcKey).catch(() => {});
+    if (asset.src && asset.src.startsWith('blob:')) URL.revokeObjectURL(asset.src);
+  });
+  state.assets = state.assets.filter((asset) => !state.selectedIds.has(asset.id));
+  state.selectedIds.clear();
+  state.multiDeleteConfirm = false;
+  state.multiSelect = false;
+  multiSelectBtn.classList.remove('active');
+  persistState();
+  renderLibrary();
+  updateMultiBar();
+  showToast('已删除所选素材');
 }
 
 function showToast(message) {
@@ -1235,6 +1317,7 @@ document.addEventListener('click', (event) => {
 
   const expandButton = event.target.closest('[data-expand]');
   if (expandButton) {
+    if (state.multiSelect) return;
     event.stopPropagation();
     openLightbox(expandButton.dataset.expand);
     return;
@@ -1304,7 +1387,11 @@ document.addEventListener('click', (event) => {
 
   const card = event.target.closest('.asset-card, .asset-row');
   if (card && card.dataset.id) {
-    selectAsset(card.dataset.id);
+    if (state.multiSelect) {
+      toggleMultiSelect(card.dataset.id);
+    } else {
+      selectAsset(card.dataset.id);
+    }
     return;
   }
 
@@ -1427,6 +1514,13 @@ sortSelect.addEventListener('change', () => {
   state.confirmDelete = false;
   state.editingTitle = null;
   renderLibrary();
+});
+
+multiSelectBtn.addEventListener('click', toggleMultiSelectMode);
+multiSelectAll.addEventListener('click', selectAllVisible);
+multiDelete.addEventListener('click', deleteSelectedAssets);
+multiCancel.addEventListener('click', () => {
+  if (state.multiSelect) toggleMultiSelectMode();
 });
 
 $('#importBtn').addEventListener('click', () => fileInput.click());

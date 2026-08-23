@@ -446,6 +446,12 @@ button {
   box-shadow: 0 1px 2px rgba(10, 5, 4, 0.1);
 }
 
+.multi-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 .icon-btn svg {
   width: 18px;
   height: 18px;
@@ -670,6 +676,33 @@ select {
   color: #fff;
   font-family: var(--font-mono);
   font-size: 10px;
+}
+
+.multi-check {
+  position: absolute;
+  z-index: 5;
+  top: 8px;
+  left: 8px;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 1.5px solid rgba(255, 255, 255, 0.92);
+  border-radius: 6px;
+  background: rgba(10, 5, 4, 0.55);
+  color: transparent;
+  pointer-events: auto;
+}
+
+.multi-check.checked {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.multi-check svg {
+  width: 14px;
+  height: 14px;
 }
 
 .type-badge {
@@ -915,6 +948,13 @@ select {
   height: 100%;
   border: 0;
   background: #fff;
+}
+
+.row-multi-check {
+  top: 8px;
+  left: 8px;
+  width: 22px;
+  height: 22px;
 }
 
 .row-thumb .pdf-cover {
@@ -1570,6 +1610,54 @@ select {
   bottom: 14px;
 }
 
+.multi-bar {
+  position: fixed;
+  z-index: 40;
+  bottom: 22px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #2A1E18;
+  border-radius: 10px;
+  background: var(--ink);
+  box-shadow: 0 12px 30px rgba(10, 5, 4, 0.3);
+  color: #fff;
+  transform: translateX(-50%);
+}
+
+.multi-count {
+  min-width: 88px;
+  color: #D8D2CC;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.multi-action {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 7px;
+  background: transparent;
+  color: #fff;
+  font-size: 12px;
+}
+
+.multi-action:hover {
+  background: #2A1E18;
+}
+
+.multi-action.danger {
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.multi-action.danger:hover,
+.multi-action.danger.confirm {
+  background: var(--accent);
+}
+
 .lightbox-media .font-tile,
 .lightbox-media .color-tile {
   width: min(640px, 86vw);
@@ -2069,6 +2157,20 @@ select {
 
   .top-actions {
     margin-left: auto;
+  }
+
+  .multi-bar {
+    bottom: 12px;
+    width: calc(100vw - 24px);
+    justify-content: space-between;
+  }
+
+  .multi-count {
+    min-width: 0;
+  }
+
+  .multi-action {
+    padding: 0 10px;
   }
 
   .font-tile {

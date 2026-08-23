@@ -76,6 +76,9 @@
             <option value="name">名称 A-Z</option>
             <option value="type">按类型</option>
           </select>
+          <button class="icon-btn multi-btn" id="multiSelectBtn" type="button" title="多选删除" aria-label="多选删除">
+            <span data-icon="checkSquare" aria-hidden="true"></span>
+          </button>
         </div>
       </header>
 
@@ -167,6 +170,13 @@
         <button class="modal-save danger" id="deleteFolderConfirm" type="button">确认删除</button>
       </div>
     </div>
+  </div>
+
+  <div class="multi-bar" id="multiBar" hidden>
+    <span class="multi-count" id="multiCount">已选 0 项</span>
+    <button class="multi-action" id="multiSelectAll" type="button">全选</button>
+    <button class="multi-action danger" id="multiDelete" type="button">删除所选</button>
+    <button class="multi-action" id="multiCancel" type="button">取消</button>
   </div>
 
   <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="放大浏览" hidden>
