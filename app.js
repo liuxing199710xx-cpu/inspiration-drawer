@@ -951,6 +951,7 @@ function updateModeUI() {
 
 function renderLibrary() {
   updateModeUI();
+  library.classList.toggle('multi-select', state.multiSelect);
   const list = visibleAssets();
   libraryGrid.innerHTML = list.map(renderCard).join('');
   libraryList.innerHTML = list.map(renderRow).join('');

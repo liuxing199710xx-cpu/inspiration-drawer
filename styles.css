@@ -688,18 +688,19 @@ select {
 
 .multi-check {
   position: absolute;
-  z-index: 5;
+  z-index: 20;
   top: 8px;
   left: 8px;
   display: grid;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   place-items: center;
   border: 1.5px solid rgba(255, 255, 255, 0.92);
   border-radius: 6px;
-  background: rgba(10, 5, 4, 0.55);
-  color: transparent;
+  background: rgba(10, 5, 4, 0.72);
+  color: rgba(255, 255, 255, 0.72);
   pointer-events: auto;
+  box-shadow: 0 2px 8px rgba(10, 5, 4, 0.22);
 }
 
 .multi-check.checked {
@@ -711,6 +712,15 @@ select {
 .multi-check svg {
   width: 14px;
   height: 14px;
+}
+
+.multi-select .asset-media,
+.multi-select .row-thumb {
+  cursor: pointer;
+}
+
+.multi-select .pdf-card-frame {
+  pointer-events: none;
 }
 
 .type-badge {
