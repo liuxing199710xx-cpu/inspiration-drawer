@@ -389,11 +389,12 @@ async function loadPersistedState() {
       const blob = await readUploadBlob(asset.srcKey).catch(() => null);
       if (!blob) continue;
       const restored = { ...asset, src: URL.createObjectURL(blob) };
-      if (asset.type === 'pdf' && (!asset.poster || asset.ratio === '16 / 9')) {
+      if (asset.type === 'pdf' && !asset.posterAll) {
         const pdfInfo = await readPdfPoster(new File([blob], `${asset.title}.pdf`, { type: 'application/pdf' })).catch(() => null);
         if (pdfInfo) {
           restored.poster = pdfInfo.poster;
           restored.ratio = pdfInfo.ratio;
+          restored.posterAll = true;
           restored.dimensions = `${pdfInfo.pageCount} 页 · ${restored.dimensions || ''}`;
         }
       }
@@ -1170,19 +1171,42 @@ function readPdfPoster(file) {
       resolve(null);
       return;
     }
-    const timer = window.setTimeout(() => resolve(null), 12000);
+    const timer = window.setTimeout(() => resolve(null), 30000);
     try {
       const data = await file.arrayBuffer();
       const pdf = await window.pdfjsLib.getDocument({ data }).promise;
-      const page = await pdf.getPage(1);
-      const base = page.getViewport({ scale: 1 });
-      const scale = Math.min(2, 960 / base.width);
-      const viewport = page.getViewport({ scale });
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.ceil(viewport.width);
-      canvas.height = Math.ceil(viewport.height);
-      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
       const pageCount = pdf.numPages;
+      const targetWidth = 640;
+      const gap = 12;
+      const pages = [];
+      let totalHeight = 0;
+
+      for (let i = 1; i <= pageCount; i += 1) {
+        const page = await pdf.getPage(i);
+        const base = page.getViewport({ scale: 1 });
+        const viewport = page.getViewport({ scale: targetWidth / base.width });
+        pages.push({ page, viewport });
+        totalHeight += Math.ceil(viewport.height);
+      }
+      totalHeight += gap * Math.max(0, pages.length - 1);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = totalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      let y = 0;
+      for (const item of pages) {
+        const height = Math.ceil(item.viewport.height);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, y, targetWidth, height);
+        await item.page.render({ canvasContext: ctx, viewport: item.viewport }).promise;
+        y += height + gap;
+        item.page.cleanup();
+      }
+
       await pdf.destroy();
       window.clearTimeout(timer);
       resolve({
@@ -1250,6 +1274,7 @@ async function addFiles(fileList) {
         folder: 'PDF 文档',
         tags: ['新加入', 'PDF'],
         poster: pdfInfo?.poster || null,
+        posterAll: Boolean(pdfInfo),
         ratio: pdfInfo?.ratio || '16 / 9',
         dimensions: pdfInfo
           ? `${pdfInfo.pageCount} 页 · ${formatFileSize(file.size)}`
