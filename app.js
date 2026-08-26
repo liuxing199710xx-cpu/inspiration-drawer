@@ -389,10 +389,11 @@ async function loadPersistedState() {
       const blob = await readUploadBlob(asset.srcKey).catch(() => null);
       if (!blob) continue;
       const restored = { ...asset, src: URL.createObjectURL(blob) };
-      if (asset.type === 'pdf' && !asset.poster) {
+      if (asset.type === 'pdf' && (!asset.poster || asset.ratio === '16 / 9')) {
         const pdfInfo = await readPdfPoster(new File([blob], `${asset.title}.pdf`, { type: 'application/pdf' })).catch(() => null);
         if (pdfInfo) {
           restored.poster = pdfInfo.poster;
+          restored.ratio = pdfInfo.ratio;
           restored.dimensions = `${pdfInfo.pageCount} 页 · ${restored.dimensions || ''}`;
         }
       }
@@ -587,7 +588,7 @@ function renderCard(asset, index) {
   const badgeColor = TYPE_BADGES[asset.type] || 'var(--ink-muted)';
   return `
     <article class="asset-card${selectedClass}" data-id="${asset.id}" tabindex="0" role="button" aria-label="${escapeHtml(asset.title)}">
-      <div class="asset-media" data-expand="${asset.id}" style="aspect-ratio:${asset.type === 'pdf' ? '16 / 9' : asset.ratio || '4 / 3'};--badge-color:${badgeColor}">
+      <div class="asset-media" data-expand="${asset.id}" style="aspect-ratio:${asset.ratio || '4 / 3'};--badge-color:${badgeColor}">
         ${state.multiSelect
           ? `<button class="multi-check${selected ? ' checked' : ''}" data-multi-toggle="${asset.id}" type="button" aria-label="选择 ${escapeHtml(asset.title)}">${icon('check')}</button>`
           : `<span class="asset-index">${String(index + 1).padStart(2, '0')}</span>`}
@@ -1186,7 +1187,8 @@ function readPdfPoster(file) {
       window.clearTimeout(timer);
       resolve({
         poster: canvas.toDataURL('image/jpeg', 0.78),
-        pageCount
+        pageCount,
+        ratio: `${canvas.width} / ${canvas.height}`
       });
     } catch (error) {
       window.clearTimeout(timer);
@@ -1248,7 +1250,7 @@ async function addFiles(fileList) {
         folder: 'PDF 文档',
         tags: ['新加入', 'PDF'],
         poster: pdfInfo?.poster || null,
-        ratio: '16 / 9',
+        ratio: pdfInfo?.ratio || '16 / 9',
         dimensions: pdfInfo
           ? `${pdfInfo.pageCount} 页 · ${formatFileSize(file.size)}`
           : formatFileSize(file.size),
