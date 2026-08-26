@@ -33,7 +33,7 @@ const UNLOCK_KEY = 'inspirationDrawerUnlocked';
 let editUnlocked = false;
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260826b';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260826d';
 }
 
 const TYPE_LABELS = {
@@ -347,6 +347,27 @@ async function readUploadBlob(id) {
   });
 }
 
+async function readUploadRecord(id) {
+  const db = await getUploadDB();
+  return new Promise((resolve, reject) => {
+    const request = db.transaction('uploads', 'readonly').objectStore('uploads').get(id);
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function savePdfPages(id, pages) {
+  const record = await readUploadRecord(id).catch(() => null);
+  if (!record) return;
+  const db = await getUploadDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('uploads', 'readwrite');
+    tx.objectStore('uploads').put({ ...record, pages });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
 async function removeUploadBlob(id) {
   const db = await getUploadDB();
   return new Promise((resolve, reject) => {
@@ -360,9 +381,15 @@ async function removeUploadBlob(id) {
 function persistState() {
   if (VIEW_MODE) return;
   try {
-    const savedAssets = state.assets.map((asset) => (
-      asset.srcKey ? { ...asset, src: `upload://${asset.srcKey}` } : asset
-    ));
+    const savedAssets = state.assets.map((asset) => {
+      const saved = asset.srcKey ? { ...asset, src: `upload://${asset.srcKey}` } : { ...asset };
+      if (asset.type === 'pdf') {
+        delete saved.pages;
+        if (asset.posterVersion === 'pages-v1') delete saved.poster;
+        delete saved.posterAll;
+      }
+      return saved;
+    });
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       assets: savedAssets,
       folderOrder: state.folderOrder,
@@ -386,16 +413,23 @@ async function loadPersistedState() {
   const restoredAssets = [];
   for (const asset of data.assets) {
     if (asset.srcKey) {
-      const blob = await readUploadBlob(asset.srcKey).catch(() => null);
-      if (!blob) continue;
-      const restored = { ...asset, src: URL.createObjectURL(blob) };
-      if (asset.type === 'pdf' && !asset.posterAll) {
-        const pdfInfo = await readPdfPoster(new File([blob], `${asset.title}.pdf`, { type: 'application/pdf' })).catch(() => null);
-        if (pdfInfo) {
-          restored.poster = pdfInfo.poster;
-          restored.ratio = pdfInfo.ratio;
-          restored.posterAll = true;
-          restored.dimensions = `${pdfInfo.pageCount} 页 · ${restored.dimensions || ''}`;
+      const record = await readUploadRecord(asset.srcKey).catch(() => null);
+      if (!record || !record.blob) continue;
+      const restored = { ...asset, src: URL.createObjectURL(record.blob) };
+      if (asset.type === 'pdf') {
+        if (Array.isArray(record.pages) && record.pages.length) {
+          restored.pages = record.pages;
+          restored.poster = record.pages[0] || null;
+          restored.posterVersion = 'pages-v1';
+        } else {
+          const pdfInfo = await readPdfPages(record.blob).catch(() => null);
+          if (pdfInfo) {
+            restored.pages = pdfInfo.pages;
+            restored.poster = pdfInfo.pages[0] || null;
+            restored.posterVersion = 'pages-v1';
+            restored.dimensions = `${pdfInfo.pageCount} 页 · ${restored.dimensions || ''}`;
+            await savePdfPages(asset.srcKey, pdfInfo.pages).catch(() => {});
+          }
         }
       }
       restoredAssets.push(restored);
@@ -537,7 +571,7 @@ function visibleAssets() {
     });
 }
 
-function renderMedia(asset, controls = false) {
+function renderMedia(asset, controls = false, thumbnail = false) {
   if (asset.type === 'font') {
     const spec = asset.spec || {};
     return `
@@ -560,6 +594,19 @@ function renderMedia(asset, controls = false) {
 
   if (asset.type === 'pdf') {
     if (!controls) {
+      if (thumbnail) {
+        const posterSrc = asset.poster || (asset.pages && asset.pages[0]) || '';
+        if (posterSrc) {
+          return `<img class="pdf-poster" src="${posterSrc}" alt="${escapeHtml(asset.title)}" loading="lazy">`;
+        }
+        return `<iframe class="pdf-card-frame" src="${asset.src}#toolbar=0&navpanes=0&view=FitH" scrolling="no" title="${escapeHtml(asset.title)}" loading="lazy"></iframe>`;
+      }
+      if (Array.isArray(asset.pages) && asset.pages.length) {
+        const pageImages = asset.pages.map((src) => (
+          `<img src="${src}" alt="${escapeHtml(asset.title)}" loading="lazy">`
+        )).join('');
+        return `<div class="pdf-pages">${pageImages}</div>`;
+      }
       if (asset.poster) {
         return `<img class="pdf-poster" src="${asset.poster}" alt="${escapeHtml(asset.title)}" loading="lazy">`;
       }
@@ -587,9 +634,12 @@ function renderCard(asset, index) {
   const selected = state.multiSelect ? state.selectedIds.has(asset.id) : asset.id === state.selectedId;
   const selectedClass = selected ? ' selected' : '';
   const badgeColor = TYPE_BADGES[asset.type] || 'var(--ink-muted)';
+  const mediaStyle = asset.type === 'pdf'
+    ? `--badge-color:${badgeColor}`
+    : `aspect-ratio:${asset.ratio || '4 / 3'};--badge-color:${badgeColor}`;
   return `
     <article class="asset-card${selectedClass}" data-id="${asset.id}" tabindex="0" role="button" aria-label="${escapeHtml(asset.title)}">
-      <div class="asset-media" data-expand="${asset.id}" style="aspect-ratio:${asset.ratio || '4 / 3'};--badge-color:${badgeColor}">
+      <div class="asset-media${asset.type === 'pdf' ? ' pdf-card' : ''}" data-expand="${asset.id}" style="${mediaStyle}">
         ${state.multiSelect
           ? `<button class="multi-check${selected ? ' checked' : ''}" data-multi-toggle="${asset.id}" type="button" aria-label="选择 ${escapeHtml(asset.title)}">${icon('check')}</button>`
           : `<span class="asset-index">${String(index + 1).padStart(2, '0')}</span>`}
@@ -612,7 +662,7 @@ function renderRow(asset, index) {
   return `
     <article class="asset-row${selectedClass}" data-id="${asset.id}" tabindex="0" role="button" aria-label="${escapeHtml(asset.title)}">
       <div class="row-thumb" data-expand="${asset.id}">
-        ${renderMedia(asset)}
+        ${renderMedia(asset, false, true)}
         ${state.multiSelect ? `<button class="multi-check row-multi-check${selected ? ' checked' : ''}" data-multi-toggle="${asset.id}" type="button" aria-label="选择 ${escapeHtml(asset.title)}">${icon('check')}</button>` : ''}
       </div>
       <div class="row-body">
@@ -1165,54 +1215,41 @@ function readVideoPoster(src) {
   });
 }
 
-function readPdfPoster(file) {
+function readPdfPages(blob) {
   return new Promise(async (resolve) => {
     if (!window.pdfjsLib) {
       resolve(null);
       return;
     }
-    const timer = window.setTimeout(() => resolve(null), 30000);
+    const timer = window.setTimeout(() => resolve(null), 120000);
     try {
-      const data = await file.arrayBuffer();
+      const data = await blob.arrayBuffer();
       const pdf = await window.pdfjsLib.getDocument({ data }).promise;
       const pageCount = pdf.numPages;
-      const targetWidth = 640;
-      const gap = 12;
+      const targetWidth = 480;
       const pages = [];
-      let totalHeight = 0;
 
       for (let i = 1; i <= pageCount; i += 1) {
         const page = await pdf.getPage(i);
         const base = page.getViewport({ scale: 1 });
         const viewport = page.getViewport({ scale: targetWidth / base.width });
-        pages.push({ page, viewport });
-        totalHeight += Math.ceil(viewport.height);
-      }
-      totalHeight += gap * Math.max(0, pages.length - 1);
-
-      const canvas = document.createElement('canvas');
-      canvas.width = targetWidth;
-      canvas.height = totalHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      let y = 0;
-      for (const item of pages) {
-        const height = Math.ceil(item.viewport.height);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
+        const ctx = canvas.getContext('2d');
         ctx.fillStyle = '#fff';
-        ctx.fillRect(0, y, targetWidth, height);
-        await item.page.render({ canvasContext: ctx, viewport: item.viewport }).promise;
-        y += height + gap;
-        item.page.cleanup();
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        pages.push(canvas.toDataURL('image/jpeg', 0.72));
+        page.cleanup();
       }
 
       await pdf.destroy();
       window.clearTimeout(timer);
       resolve({
-        poster: canvas.toDataURL('image/jpeg', 0.78),
+        pages,
         pageCount,
-        ratio: `${canvas.width} / ${canvas.height}`
+        ratio: 'auto'
       });
     } catch (error) {
       window.clearTimeout(timer);
@@ -1256,7 +1293,7 @@ async function addFiles(fileList) {
     const isPdf = isPdfFile(file);
     const isVideo = !isPdf && isVideoFile(file);
     const assetId = `upload-${Date.now()}-${uploadSeq++}`;
-    const pdfInfo = isPdf ? await readPdfPoster(file) : null;
+    const pdfInfo = isPdf ? await readPdfPages(file) : null;
     const common = {
       id: assetId,
       title: file.name.replace(/\.[^.]+$/, '') || '未命名素材',
@@ -1268,14 +1305,16 @@ async function addFiles(fileList) {
     await saveUploadBlob(assetId, file).catch(() => {});
 
     if (isPdf) {
+      await savePdfPages(assetId, pdfInfo?.pages || []).catch(() => {});
       state.assets.unshift({
         ...common,
         type: 'pdf',
         folder: 'PDF 文档',
         tags: ['新加入', 'PDF'],
-        poster: pdfInfo?.poster || null,
-        posterAll: Boolean(pdfInfo),
-        ratio: pdfInfo?.ratio || '16 / 9',
+        pages: pdfInfo?.pages || [],
+        poster: pdfInfo?.pages?.[0] || null,
+        posterVersion: pdfInfo ? 'pages-v1' : null,
+        ratio: 'auto',
         dimensions: pdfInfo
           ? `${pdfInfo.pageCount} 页 · ${formatFileSize(file.size)}`
           : formatFileSize(file.size),
