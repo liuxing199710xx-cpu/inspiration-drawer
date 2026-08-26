@@ -32,6 +32,10 @@ const STORAGE_KEY = 'inspirationDrawerDataV1';
 const UNLOCK_KEY = 'inspirationDrawerUnlocked';
 let editUnlocked = false;
 
+if (window.pdfjsLib) {
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js';
+}
+
 const TYPE_LABELS = {
   page: '页面版式',
   image: '视觉素材',
@@ -384,7 +388,15 @@ async function loadPersistedState() {
     if (asset.srcKey) {
       const blob = await readUploadBlob(asset.srcKey).catch(() => null);
       if (!blob) continue;
-      restoredAssets.push({ ...asset, src: URL.createObjectURL(blob) });
+      const restored = { ...asset, src: URL.createObjectURL(blob) };
+      if (asset.type === 'pdf' && !asset.poster) {
+        const pdfInfo = await readPdfPoster(new File([blob], `${asset.title}.pdf`, { type: 'application/pdf' })).catch(() => null);
+        if (pdfInfo) {
+          restored.poster = pdfInfo.poster;
+          restored.dimensions = `${pdfInfo.pageCount} 页 · ${restored.dimensions || ''}`;
+        }
+      }
+      restoredAssets.push(restored);
     } else {
       restoredAssets.push(asset);
     }
@@ -393,6 +405,7 @@ async function loadPersistedState() {
   state.folderOrder = Array.isArray(data.folderOrder) ? data.folderOrder : FOLDER_ORDER.slice(2);
   state.folderNames = data.folderNames || Object.fromEntries(FOLDER_ORDER.slice(2).map((folder) => [folder, folder]));
   state.folderParents = data.folderParents || Object.fromEntries(FOLDER_ORDER.slice(2).map((folder) => [folder, null]));
+  persistState();
 }
 
 function buildViewUrl() {
@@ -545,6 +558,9 @@ function renderMedia(asset, controls = false) {
 
   if (asset.type === 'pdf') {
     if (!controls) {
+      if (asset.poster) {
+        return `<img class="pdf-poster" src="${asset.poster}" alt="${escapeHtml(asset.title)}" loading="lazy">`;
+      }
       return `<iframe class="pdf-card-frame" src="${asset.src}#toolbar=0&navpanes=0&view=FitH" scrolling="no" title="${escapeHtml(asset.title)}" loading="lazy"></iframe>`;
     }
     return `
@@ -1147,6 +1163,38 @@ function readVideoPoster(src) {
   });
 }
 
+function readPdfPoster(file) {
+  return new Promise(async (resolve) => {
+    if (!window.pdfjsLib) {
+      resolve(null);
+      return;
+    }
+    const timer = window.setTimeout(() => resolve(null), 12000);
+    try {
+      const data = await file.arrayBuffer();
+      const pdf = await window.pdfjsLib.getDocument({ data }).promise;
+      const page = await pdf.getPage(1);
+      const base = page.getViewport({ scale: 1 });
+      const scale = Math.min(2, 960 / base.width);
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+      const pageCount = pdf.numPages;
+      await pdf.destroy();
+      window.clearTimeout(timer);
+      resolve({
+        poster: canvas.toDataURL('image/jpeg', 0.78),
+        pageCount
+      });
+    } catch (error) {
+      window.clearTimeout(timer);
+      resolve(null);
+    }
+  });
+}
+
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -1182,6 +1230,7 @@ async function addFiles(fileList) {
     const isPdf = isPdfFile(file);
     const isVideo = !isPdf && isVideoFile(file);
     const assetId = `upload-${Date.now()}-${uploadSeq++}`;
+    const pdfInfo = isPdf ? await readPdfPoster(file) : null;
     const common = {
       id: assetId,
       title: file.name.replace(/\.[^.]+$/, '') || '未命名素材',
@@ -1198,8 +1247,11 @@ async function addFiles(fileList) {
         type: 'pdf',
         folder: 'PDF 文档',
         tags: ['新加入', 'PDF'],
+        poster: pdfInfo?.poster || null,
         ratio: '16 / 9',
-        dimensions: formatFileSize(file.size),
+        dimensions: pdfInfo
+          ? `${pdfInfo.pageCount} 页 · ${formatFileSize(file.size)}`
+          : formatFileSize(file.size),
         notes: '从本地导入的 PDF 文档。'
       });
       continue;
