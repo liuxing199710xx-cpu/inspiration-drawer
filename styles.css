@@ -615,6 +615,8 @@ select {
   min-height: 110px;
   border: 0;
   background: #fff;
+  overflow: hidden;
+  scrollbar-width: none;
 }
 
 .asset-media .pdf-cover {
@@ -973,6 +975,8 @@ select {
   height: 100%;
   border: 0;
   background: #fff;
+  overflow: hidden;
+  scrollbar-width: none;
 }
 
 .row-multi-check {
