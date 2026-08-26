@@ -545,7 +545,7 @@ function renderMedia(asset, controls = false) {
 
   if (asset.type === 'pdf') {
     if (!controls) {
-      return `<iframe class="pdf-card-frame" src="${asset.src}" title="${escapeHtml(asset.title)}" loading="lazy"></iframe>`;
+      return `<iframe class="pdf-card-frame" src="${asset.src}#toolbar=0&navpanes=0&view=FitH" scrolling="no" title="${escapeHtml(asset.title)}" loading="lazy"></iframe>`;
     }
     return `
       <div class="pdf-stage">
@@ -571,7 +571,7 @@ function renderCard(asset, index) {
   const badgeColor = TYPE_BADGES[asset.type] || 'var(--ink-muted)';
   return `
     <article class="asset-card${selectedClass}" data-id="${asset.id}" tabindex="0" role="button" aria-label="${escapeHtml(asset.title)}">
-      <div class="asset-media" data-expand="${asset.id}" style="aspect-ratio:${asset.ratio || '4 / 3'};--badge-color:${badgeColor}">
+      <div class="asset-media" data-expand="${asset.id}" style="aspect-ratio:${asset.type === 'pdf' ? '16 / 9' : asset.ratio || '4 / 3'};--badge-color:${badgeColor}">
         ${state.multiSelect
           ? `<button class="multi-check${selected ? ' checked' : ''}" data-multi-toggle="${asset.id}" type="button" aria-label="选择 ${escapeHtml(asset.title)}">${icon('check')}</button>`
           : `<span class="asset-index">${String(index + 1).padStart(2, '0')}</span>`}
@@ -1198,7 +1198,7 @@ async function addFiles(fileList) {
         type: 'pdf',
         folder: 'PDF 文档',
         tags: ['新加入', 'PDF'],
-        ratio: '3 / 4',
+        ratio: '16 / 9',
         dimensions: formatFileSize(file.size),
         notes: '从本地导入的 PDF 文档。'
       });
