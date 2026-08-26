@@ -33,7 +33,7 @@ const UNLOCK_KEY = 'inspirationDrawerUnlocked';
 let editUnlocked = false;
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260826b';
 }
 
 const TYPE_LABELS = {
