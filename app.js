@@ -58,7 +58,7 @@ document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebar
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901f';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901h';
 }
 
 const TYPE_LABELS = {
@@ -702,20 +702,25 @@ function renderRow(asset, index) {
 }
 
 function renderNav() {
+  function navRowMarkup(folder, count, active, actions = '', depth = 0, label = null) {
+    return `
+      <div class="nav-row" style="--depth:${depth}">
+        <button class="nav-btn${active}" data-folder="${escapeHtml(folder)}" type="button">
+          <span class="nav-icon">${icon('folder')}</span>
+          <span class="nav-name">${escapeHtml(label || displayFolderName(folder))}</span>
+        </button>
+        <span class="nav-count">${count}</span>
+        <div class="nav-actions">${actions}</div>
+      </div>`;
+  }
+
   const systemRows = ['全部素材', '我的收藏'].map((folder) => {
     const count = state.assets.filter((asset) => {
       if (folder === '全部素材') return true;
       return asset.favorite;
     }).length;
     const active = state.activeFolder === folder && !state.activeTag ? ' active' : '';
-    return `
-      <div class="nav-row">
-        <button class="nav-btn${active}" data-folder="${escapeHtml(folder)}" type="button">
-          <span class="nav-icon">${icon('folder')}</span>
-          <span class="nav-name">${escapeHtml(folder)}</span>
-          <span class="nav-count">${count}</span>
-        </button>
-      </div>`;
+    return navRowMarkup(folder, count, active, '', 0, folder);
   }).join('');
 
   function countFolderAssets(folder) {
@@ -744,14 +749,7 @@ function renderNav() {
       }
     }
     return `
-      <div class="nav-row" style="--depth:${depth}">
-        <button class="nav-btn${active}" data-folder="${escapeHtml(folder)}" type="button">
-          <span class="nav-icon">${icon('folder')}</span>
-          <span class="nav-name">${escapeHtml(displayFolderName(folder))}</span>
-          <span class="nav-count">${count}</span>
-        </button>
-        ${actions.join('')}
-      </div>`;
+      ${navRowMarkup(folder, count, active, actions.join(''), depth)}`;
   }
 
   function folderTree(parent, depth = 0) {
