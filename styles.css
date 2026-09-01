@@ -59,10 +59,38 @@ button {
 }
 
 .app-shell {
+  position: relative;
   display: grid;
-  grid-template-columns: 264px minmax(0, 1fr) 360px;
+  grid-template-columns: 264px minmax(0, 1fr) var(--inspector-width, 360px);
   height: 100vh;
   overflow: hidden;
+}
+
+.inspector-resizer {
+  position: absolute;
+  z-index: 30;
+  top: 0;
+  bottom: 0;
+  left: calc(100% - var(--inspector-width, 360px) - 4px);
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.inspector-resizer::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 2px;
+  background: transparent;
+  content: '';
+  transition: background 0.15s ease;
+}
+
+.inspector-resizer:hover::before,
+.inspector-resizer.dragging::before {
+  background: var(--accent);
 }
 
 .sidebar-backdrop {
@@ -1377,10 +1405,8 @@ select {
 
 .meta-item dd {
   margin: 0;
-  overflow: hidden;
   font-size: 13px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .inspector-section {
@@ -2084,6 +2110,10 @@ select {
 }
 
 @media (max-width: 1280px) {
+  .inspector-resizer {
+    display: none;
+  }
+
   .app-shell {
     grid-template-columns: 250px minmax(0, 1fr);
   }
