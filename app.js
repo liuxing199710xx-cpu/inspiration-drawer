@@ -33,7 +33,7 @@ const UNLOCK_KEY = 'inspirationDrawerUnlocked';
 let editUnlocked = false;
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901b';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901c';
 }
 
 const TYPE_LABELS = {
@@ -647,7 +647,7 @@ function renderCard(asset, index) {
       </div>
       <div class="asset-meta">
         <span class="asset-title">${escapeHtml(asset.title)}</span>
-        <span class="asset-sub">${escapeHtml(asset.tags.slice(0, 2).join(' / '))}</span>
+        <span class="asset-sub">${escapeHtml(asset.tags.join(' / '))}</span>
       </div>
     </article>`;
 }
@@ -655,7 +655,7 @@ function renderCard(asset, index) {
 function renderRow(asset, index) {
   const selected = state.multiSelect ? state.selectedIds.has(asset.id) : asset.id === state.selectedId;
   const selectedClass = selected ? ' selected' : '';
-  const tags = asset.tags.slice(0, 3).map((tag) => `<span class="row-tag">${escapeHtml(tag)}</span>`).join('');
+  const tags = asset.tags.map((tag) => `<span class="row-tag">${escapeHtml(tag)}</span>`).join('');
   return `
     <article class="asset-row${selectedClass}" data-id="${asset.id}" tabindex="0" role="button" aria-label="${escapeHtml(asset.title)}">
       <div class="row-thumb" data-expand="${asset.id}">
@@ -854,7 +854,11 @@ function renderInspector() {
           ${asset.tags.map((tag) => `
             <span class="tag-chip">${escapeHtml(tag)}${VIEW_MODE ? '' : `<button class="tag-remove" data-tag-remove="${asset.id}" data-tag-value="${escapeHtml(tag)}" type="button" title="删除标签">${icon('close')}</button>`}</span>
           `).join('')}
-          ${VIEW_MODE ? '' : `<input class="tag-input" data-tag-input="${asset.id}" placeholder="添加标签" maxlength="20" aria-label="添加标签">`}
+          ${VIEW_MODE ? '' : `
+            <div class="tag-add-row">
+              <input class="tag-input" data-tag-input="${asset.id}" placeholder="添加标签，可用逗号分隔" maxlength="60" aria-label="添加标签">
+              <button class="tag-add-btn" data-tag-add="${asset.id}" type="button" title="添加标签">${icon('check')}</button>
+            </div>`}
         </div>
       </section>
       ${asset.swatches ? renderInspectorPalette(asset) : ''}
@@ -1065,19 +1069,27 @@ function toggleFavorite(id) {
   showToast(asset.favorite ? '已加入我的收藏' : '已取消收藏');
 }
 
+function parseTags(rawTag) {
+  return String(rawTag || '')
+    .split(/[,，、;；]/)
+    .map((tag) => tag.trim().replace(/\s+/g, ' '))
+    .filter(Boolean);
+}
+
 function addAssetTag(id, rawTag) {
   if (VIEW_MODE) return;
   const asset = state.assets.find((item) => item.id === id);
-  const tag = String(rawTag || '').trim().replace(/\s+/g, ' ');
-  if (!asset || !tag) return;
-  if (asset.tags.includes(tag)) {
+  const tags = parseTags(rawTag);
+  if (!asset || !tags.length) return;
+  const freshTags = tags.filter((tag) => !asset.tags.includes(tag));
+  if (!freshTags.length) {
     showToast('这个标签已经存在');
     return;
   }
-  asset.tags.push(tag);
+  asset.tags.push(...freshTags);
   renderLibrary();
   persistState();
-  showToast('标签已添加');
+  showToast(`已添加 ${freshTags.length} 个标签`);
 }
 
 function removeAssetTag(id, tag) {
@@ -1402,6 +1414,15 @@ document.addEventListener('click', (event) => {
     if (VIEW_MODE) return;
     event.stopPropagation();
     removeAssetTag(tagRemoveButton.dataset.tagRemove, tagRemoveButton.dataset.tagValue);
+    return;
+  }
+
+  const tagAddButton = event.target.closest('[data-tag-add]');
+  if (tagAddButton) {
+    if (VIEW_MODE) return;
+    event.stopPropagation();
+    const input = tagAddButton.closest('.tag-add-row')?.querySelector('.tag-input');
+    addAssetTag(tagAddButton.dataset.tagAdd, input ? input.value : '');
     return;
   }
 
