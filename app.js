@@ -61,7 +61,7 @@ document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebar
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901l';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901m';
 }
 
 const TYPE_LABELS = {
@@ -1482,7 +1482,7 @@ async function uploadRepoFile(repo, token, path, blob, message) {
     } catch (error) {
       lastError = error;
       const messageText = String(error.message || error);
-      if (!/timed out|timeout|502|503|aborted/i.test(messageText)) throw error;
+      if (!/timed out|timeout|502|503|aborted|load failed|failed to fetch|networkerror/i.test(messageText)) throw error;
       await new Promise((resolve) => window.setTimeout(resolve, 1200 * attempt));
     }
   }
@@ -1491,7 +1491,7 @@ async function uploadRepoFile(repo, token, path, blob, message) {
 
 function isTooLargeError(error) {
   const message = String(error.message || error);
-  return /too large|413/i.test(message);
+  return /too large|413|load failed|failed to fetch|networkerror/i.test(message);
 }
 
 async function loadSharedLibrary() {
@@ -1545,26 +1545,7 @@ async function syncToCloud() {
       const ext = fileExtForAsset(asset, blob);
       asset.fileExt = ext;
       const urls = {};
-      try {
-        urls.src = await uploadRepoFile(
-          repo,
-          token,
-          `shared/media/${asset.id}.${ext}`,
-          blob,
-          `同步素材：${asset.title}`
-        );
-        if (asset.poster && asset.poster.startsWith('data:')) {
-          const posterBlob = await dataUrlToBlob(asset.poster);
-          urls.poster = await uploadRepoFile(
-            repo,
-            token,
-            `shared/media/${asset.id}-poster.jpg`,
-            posterBlob,
-            `同步封面：${asset.title}`
-          );
-        }
-      } catch (error) {
-        if (!isTooLargeError(error)) throw error;
+      if (blob.size > 80 * 1024 * 1024) {
         urls.previewOnly = true;
         if (asset.poster && asset.poster.startsWith('data:')) {
           const posterBlob = await dataUrlToBlob(asset.poster);
@@ -1578,6 +1559,41 @@ async function syncToCloud() {
           urls.src = urls.poster;
         }
         showToast(`${asset.title} 文件较大，已使用封面预览同步`);
+      } else {
+        try {
+          urls.src = await uploadRepoFile(
+            repo,
+            token,
+            `shared/media/${asset.id}.${ext}`,
+            blob,
+            `同步素材：${asset.title}`
+          );
+          if (asset.poster && asset.poster.startsWith('data:')) {
+            const posterBlob = await dataUrlToBlob(asset.poster);
+            urls.poster = await uploadRepoFile(
+              repo,
+              token,
+              `shared/media/${asset.id}-poster.jpg`,
+              posterBlob,
+              `同步封面：${asset.title}`
+            );
+          }
+        } catch (error) {
+          if (!isTooLargeError(error)) throw error;
+          urls.previewOnly = true;
+          if (asset.poster && asset.poster.startsWith('data:')) {
+            const posterBlob = await dataUrlToBlob(asset.poster);
+            urls.poster = await uploadRepoFile(
+              repo,
+              token,
+              `shared/media/${asset.id}-poster.jpg`,
+              posterBlob,
+              `同步封面：${asset.title}`
+            );
+            urls.src = urls.poster;
+          }
+          showToast(`${asset.title} 文件较大，已使用封面预览同步`);
+        }
       }
       cloudUrlById[asset.id] = urls;
       markSyncedFile(asset.id, urls);
