@@ -30,10 +30,23 @@ const VIEW_MODE = URL_PARAMS.has('view');
 const DEFAULT_PASSWORD = '123456';
 const STORAGE_KEY = 'inspirationDrawerDataV1';
 const UNLOCK_KEY = 'inspirationDrawerUnlocked';
+const INSPECTOR_WIDTH_KEY = 'inspirationDrawerInspectorWidth';
 let editUnlocked = false;
 
+function getSavedInspectorWidth() {
+  try {
+    const value = Number(localStorage.getItem(INSPECTOR_WIDTH_KEY));
+    if (value >= 300 && value <= 720) return value;
+  } catch (error) {
+    // 本地空间异常时使用默认宽度。
+  }
+  return 360;
+}
+
+document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
+
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901d';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901e';
 }
 
 const TYPE_LABELS = {
@@ -248,6 +261,7 @@ const statusCount = $('#statusCount');
 const folderNav = $('#folderNav');
 const typeTabs = $('#typeTabs');
 const inspector = $('#inspector');
+const inspectorResizer = $('#inspectorResizer');
 const sortSelect = $('#sortSelect');
 const dropOverlay = $('#dropOverlay');
 const fileInput = $('#fileInput');
@@ -1746,6 +1760,30 @@ fileInput.addEventListener('change', () => {
   addFiles(fileInput.files);
   fileInput.value = '';
 });
+
+let inspectorDrag = null;
+inspectorResizer.addEventListener('pointerdown', (event) => {
+  event.preventDefault();
+  inspectorResizer.classList.add('dragging');
+  inspectorDrag = { startX: event.clientX, startWidth: getSavedInspectorWidth() };
+  inspectorResizer.setPointerCapture(event.pointerId);
+});
+inspectorResizer.addEventListener('pointermove', (event) => {
+  if (!inspectorDrag) return;
+  const nextWidth = Math.round(Math.min(720, Math.max(300, inspectorDrag.startWidth + inspectorDrag.startX - event.clientX)));
+  document.documentElement.style.setProperty('--inspector-width', `${nextWidth}px`);
+  try {
+    localStorage.setItem(INSPECTOR_WIDTH_KEY, String(nextWidth));
+  } catch (error) {
+    // 本地存储异常时只保留当前页面宽度。
+  }
+});
+function stopInspectorDrag() {
+  inspectorDrag = null;
+  inspectorResizer.classList.remove('dragging');
+}
+inspectorResizer.addEventListener('pointerup', stopInspectorDrag);
+inspectorResizer.addEventListener('pointercancel', stopInspectorDrag);
 
 authForm.addEventListener('submit', (event) => {
   event.preventDefault();
