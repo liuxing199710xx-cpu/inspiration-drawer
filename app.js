@@ -33,7 +33,7 @@ const UNLOCK_KEY = 'inspirationDrawerUnlocked';
 let editUnlocked = false;
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901a';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901b';
 }
 
 const TYPE_LABELS = {
@@ -850,7 +850,12 @@ function renderInspector() {
       </section>
       <section class="inspector-section">
         <h3>标签</h3>
-        <div class="inspector-tags">${asset.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}</div>
+        <div class="inspector-tags">
+          ${asset.tags.map((tag) => `
+            <span class="tag-chip">${escapeHtml(tag)}${VIEW_MODE ? '' : `<button class="tag-remove" data-tag-remove="${asset.id}" data-tag-value="${escapeHtml(tag)}" type="button" title="删除标签">${icon('close')}</button>`}</span>
+          `).join('')}
+          ${VIEW_MODE ? '' : `<input class="tag-input" data-tag-input="${asset.id}" placeholder="添加标签" maxlength="20" aria-label="添加标签">`}
+        </div>
       </section>
       ${asset.swatches ? renderInspectorPalette(asset) : ''}
       ${actionButtons}
@@ -1058,6 +1063,32 @@ function toggleFavorite(id) {
   persistState();
   if (state.lightboxId) renderLightbox();
   showToast(asset.favorite ? '已加入我的收藏' : '已取消收藏');
+}
+
+function addAssetTag(id, rawTag) {
+  if (VIEW_MODE) return;
+  const asset = state.assets.find((item) => item.id === id);
+  const tag = String(rawTag || '').trim().replace(/\s+/g, ' ');
+  if (!asset || !tag) return;
+  if (asset.tags.includes(tag)) {
+    showToast('这个标签已经存在');
+    return;
+  }
+  asset.tags.push(tag);
+  renderLibrary();
+  persistState();
+  showToast('标签已添加');
+}
+
+function removeAssetTag(id, tag) {
+  if (VIEW_MODE) return;
+  const asset = state.assets.find((item) => item.id === id);
+  if (!asset) return;
+  asset.tags = asset.tags.filter((item) => item !== tag);
+  if (state.activeTag === tag) state.activeTag = null;
+  renderLibrary();
+  persistState();
+  showToast('标签已删除');
 }
 
 function updateMultiBar() {
@@ -1366,6 +1397,14 @@ function closeSidebar() {
 }
 
 document.addEventListener('click', (event) => {
+  const tagRemoveButton = event.target.closest('[data-tag-remove]');
+  if (tagRemoveButton) {
+    if (VIEW_MODE) return;
+    event.stopPropagation();
+    removeAssetTag(tagRemoveButton.dataset.tagRemove, tagRemoveButton.dataset.tagValue);
+    return;
+  }
+
   const renameButton = event.target.closest('[data-rename-folder]');
   if (renameButton) {
     if (VIEW_MODE) return;
@@ -1546,8 +1585,20 @@ document.addEventListener('input', (event) => {
   }
 });
 
+document.addEventListener('change', (event) => {
+  const tagInput = event.target.closest('[data-tag-input]');
+  if (!tagInput) return;
+  addAssetTag(tagInput.dataset.tagInput, tagInput.value);
+});
+
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') {
+    const tagInput = event.target.closest('.tag-input');
+    if (tagInput) {
+      event.preventDefault();
+      addAssetTag(tagInput.dataset.tagInput, tagInput.value);
+      return;
+    }
     const titleInput = event.target.closest('.title-edit-input');
     if (titleInput) {
       event.preventDefault();
