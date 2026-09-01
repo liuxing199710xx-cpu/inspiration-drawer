@@ -61,7 +61,7 @@ document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebar
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901k';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901l';
 }
 
 const TYPE_LABELS = {
@@ -1458,23 +1458,35 @@ function dataUrlToBlob(dataUrl) {
 }
 
 async function uploadRepoFile(repo, token, path, blob, message) {
-  const encodedPath = path.split('/').map(encodeURIComponent).join('/');
-  const url = `https://api.github.com/repos/${repo}/contents/${encodedPath}`;
-  const headers = {
-    Authorization: `Bearer ${token}`,
-    Accept: 'application/vnd.github+json',
-    'Content-Type': 'application/json'
-  };
-  const existing = await fetch(url, { headers });
-  let sha = null;
-  if (existing.ok) sha = (await existing.json()).sha;
-  const body = { message, content: await blobToBase64(blob), branch: 'main' };
-  if (sha) body.sha = sha;
-  const putRes = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) });
-  if (!putRes.ok) {
-    const errorBody = await putRes.json().catch(() => ({}));
-    throw new Error(errorBody.message || `GitHub 返回 ${putRes.status}`);
+  let lastError = null;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+      const url = `https://api.github.com/repos/${repo}/contents/${encodedPath}`;
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json'
+      };
+      const existing = await fetch(url, { headers });
+      let sha = null;
+      if (existing.ok) sha = (await existing.json()).sha;
+      const body = { message, content: await blobToBase64(blob), branch: 'main' };
+      if (sha) body.sha = sha;
+      const putRes = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) });
+      if (!putRes.ok) {
+        const errorBody = await putRes.json().catch(() => ({}));
+        throw new Error(errorBody.message || `GitHub 返回 ${putRes.status}`);
+      }
+      return;
+    } catch (error) {
+      lastError = error;
+      const messageText = String(error.message || error);
+      if (!/timed out|timeout|502|503|aborted/i.test(messageText)) throw error;
+      await new Promise((resolve) => window.setTimeout(resolve, 1200 * attempt));
+    }
   }
+  throw lastError;
 }
 
 function isTooLargeError(error) {
