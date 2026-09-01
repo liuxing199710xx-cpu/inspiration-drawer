@@ -61,7 +61,7 @@ document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebar
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901m';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901n';
 }
 
 const TYPE_LABELS = {
@@ -494,6 +494,14 @@ async function loadPersistedState() {
       restoredAssets.push(restored);
     } else {
       restoredAssets.push(asset);
+    }
+  }
+  if (!restoredAssets.length) {
+    const shared = await loadSharedLibrary();
+    if (shared && Array.isArray(shared.assets) && shared.assets.length) {
+      applySharedData(shared);
+      persistState();
+      return;
     }
   }
   state.assets = restoredAssets;
