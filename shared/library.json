@@ -1,6 +1,24 @@
 {
   "assets": [
     {
+      "id": "upload-1788248848576-1",
+      "title": "哔哩哔哩-IP交流会",
+      "src": "shared/media/upload-1788248848576-1.pdf",
+      "fileExt": "pdf",
+      "added": "2026-09-01",
+      "favorite": false,
+      "type": "pdf",
+      "folder": "PDF 文档",
+      "tags": [
+        "哔哩哔哩"
+      ],
+      "poster": "shared/media/upload-1788248848576-1-poster.jpg",
+      "posterVersion": "pages-v1",
+      "ratio": "480 / 270",
+      "dimensions": "22 页 · 22.2 MB",
+      "notes": ""
+    },
+    {
       "id": "upload-1788247602428-0",
       "title": "对谈PPT腾讯云AI产业峰会",
       "src": "shared/media/upload-1788247602428-0.pdf",
@@ -246,5 +264,5 @@
     "PDF 文档": null,
     "未分类": null
   },
-  "updatedAt": "2026-09-01T07:27:05.695Z"
+  "updatedAt": "2026-09-01T07:47:49.451Z"
 }
