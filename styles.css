@@ -267,7 +267,7 @@ button {
 .nav-count {
   flex: none;
   width: 30px;
-  margin-left: 4px;
+  margin-left: 8px;
   color: #A79F98;
   font-family: var(--font-mono);
   font-size: 11px;
@@ -277,7 +277,6 @@ button {
 .nav-actions {
   display: flex;
   flex: none;
-  width: 126px;
   justify-content: flex-end;
   gap: 2px;
 }
