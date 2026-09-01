@@ -33,7 +33,7 @@ const UNLOCK_KEY = 'inspirationDrawerUnlocked';
 let editUnlocked = false;
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901c';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901d';
 }
 
 const TYPE_LABELS = {
@@ -709,6 +709,7 @@ function renderNav() {
     }
     const actions = [];
     if (isRenamable && !VIEW_MODE) {
+      actions.push(`<button class="folder-edit-btn folder-import-btn" data-folder-import="${escapeHtml(folder)}" type="button" title="导入素材到 ${escapeHtml(displayFolderName(folder))}">${icon('upload')}</button>`);
       actions.push(`<button class="folder-edit-btn" data-rename-folder="${escapeHtml(folder)}" type="button" title="重命名文件夹">${icon('pencil')}</button>`);
       actions.push(`<button class="folder-edit-btn" data-new-subfolder="${escapeHtml(folder)}" type="button" title="新建子文件夹">${icon('folderPlus')}</button>`);
       if (folder !== '未分类') {
@@ -1338,6 +1339,8 @@ async function addFiles(fileList) {
     showToast('只支持图片、视频或 PDF 文件');
     return;
   }
+  const isSpecificFolder = state.activeFolder !== '全部素材' && state.activeFolder !== '我的收藏';
+  const targetFolder = isSpecificFolder ? state.activeFolder : null;
 
   for (const file of files) {
     const src = URL.createObjectURL(file);
@@ -1360,7 +1363,7 @@ async function addFiles(fileList) {
       state.assets.unshift({
         ...common,
         type: 'pdf',
-        folder: 'PDF 文档',
+        folder: targetFolder || 'PDF 文档',
         tags: ['新加入', 'PDF'],
         pages: pdfInfo?.pages || [],
         poster: pdfInfo?.pages?.[0] || null,
@@ -1382,7 +1385,7 @@ async function addFiles(fileList) {
     state.assets.unshift({
       ...common,
       type: isVideo ? 'video' : 'image',
-      folder: isVideo ? '视频案例' : '视觉素材',
+      folder: targetFolder || (isVideo ? '视频案例' : '视觉素材'),
       tags: isVideo ? ['新加入', '视频'] : ['新加入'],
       poster,
       ratio: `${size.width} / ${size.height}`,
@@ -1392,7 +1395,6 @@ async function addFiles(fileList) {
   }
 
   persistState();
-  state.activeFolder = '全部素材';
   state.activeTag = null;
   state.activeType = 'all';
   state.confirmDelete = false;
@@ -1423,6 +1425,16 @@ document.addEventListener('click', (event) => {
     event.stopPropagation();
     const input = tagAddButton.closest('.tag-add-row')?.querySelector('.tag-input');
     addAssetTag(tagAddButton.dataset.tagAdd, input ? input.value : '');
+    return;
+  }
+
+  const folderImportButton = event.target.closest('[data-folder-import]');
+  if (folderImportButton) {
+    if (VIEW_MODE) return;
+    event.stopPropagation();
+    state.activeFolder = folderImportButton.dataset.folderImport;
+    state.activeTag = null;
+    fileInput.click();
     return;
   }
 
