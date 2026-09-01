@@ -32,6 +32,9 @@ const STORAGE_KEY = 'inspirationDrawerDataV1';
 const UNLOCK_KEY = 'inspirationDrawerUnlocked';
 const SIDEBAR_WIDTH_KEY = 'inspirationDrawerSidebarWidth';
 const INSPECTOR_WIDTH_KEY = 'inspirationDrawerInspectorWidth';
+const SYNC_TOKEN_KEY = 'inspirationDrawerSyncToken';
+const SYNC_REPO_KEY = 'inspirationDrawerSyncRepo';
+const SYNC_FILES_KEY = 'inspirationDrawerSyncedFiles';
 let editUnlocked = false;
 
 function getSavedSidebarWidth() {
@@ -58,7 +61,7 @@ document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebar
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901i';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901j';
 }
 
 const TYPE_LABELS = {
@@ -279,6 +282,7 @@ const sortSelect = $('#sortSelect');
 const dropOverlay = $('#dropOverlay');
 const fileInput = $('#fileInput');
 const toast = $('#toast');
+const syncBtn = $('#syncBtn');
 const multiSelectBtn = $('#multiSelectBtn');
 const multiBar = $('#multiBar');
 const multiCount = $('#multiCount');
@@ -435,6 +439,23 @@ async function loadPersistedState() {
   } catch (error) {
     data = null;
   }
+
+  if (VIEW_MODE) {
+    const shared = await loadSharedLibrary();
+    if (shared && Array.isArray(shared.assets) && shared.assets.length) {
+      applySharedData(shared);
+      return;
+    }
+  }
+
+  if (!data || !Array.isArray(data.assets) || !data.assets.length) {
+    const shared = await loadSharedLibrary();
+    if (shared && Array.isArray(shared.assets) && shared.assets.length) {
+      applySharedData(shared);
+      persistState();
+      return;
+    }
+  }
   if (!data || !Array.isArray(data.assets)) return;
 
   const restoredAssets = [];
@@ -532,6 +553,7 @@ function createFolderFromForm() {
   folderModal.hidden = true;
   renderLibrary();
   persistState();
+  scheduleCloudSync();
   showToast('文件夹已创建');
 }
 
@@ -562,6 +584,7 @@ function confirmDeleteFolder() {
   deleteFolderModal.hidden = true;
   renderLibrary();
   persistState();
+  scheduleCloudSync();
   showToast('文件夹已删除');
 }
 
@@ -789,6 +812,7 @@ function saveFolderName(key) {
   state.editingFolder = null;
   renderLibrary();
   persistState();
+  scheduleCloudSync();
   showToast('文件夹已重命名');
 }
 
@@ -922,6 +946,7 @@ function saveAssetTitle(id = state.editingTitle, input = null) {
   state.editingTitle = null;
   renderLibrary();
   persistState();
+  scheduleCloudSync();
   if (state.lightboxId) renderLightbox();
   showToast('文件名称已修改');
 }
@@ -1029,6 +1054,7 @@ function deleteAsset(id) {
   }
   renderLibrary();
   persistState();
+  scheduleCloudSync();
   showToast('素材已删除');
 }
 
@@ -1043,6 +1069,7 @@ function updateModeUI() {
   modeBadge.hidden = false;
   newFolderBtn.hidden = VIEW_MODE;
   shareBtn.hidden = VIEW_MODE;
+  syncBtn.hidden = VIEW_MODE;
   passwordBtn.hidden = VIEW_MODE;
   importBtn.hidden = VIEW_MODE;
   multiSelectBtn.hidden = false;
@@ -1091,6 +1118,7 @@ function toggleFavorite(id) {
   asset.favorite = !asset.favorite;
   renderLibrary();
   persistState();
+  scheduleCloudSync();
   if (state.lightboxId) renderLightbox();
   showToast(asset.favorite ? '已加入我的收藏' : '已取消收藏');
 }
@@ -1115,6 +1143,7 @@ function addAssetTag(id, rawTag) {
   asset.tags.push(...freshTags);
   renderLibrary();
   persistState();
+  scheduleCloudSync();
   showToast(`已添加 ${freshTags.length} 个标签`);
 }
 
@@ -1126,6 +1155,7 @@ function removeAssetTag(id, tag) {
   if (state.activeTag === tag) state.activeTag = null;
   renderLibrary();
   persistState();
+  scheduleCloudSync();
   showToast('标签已删除');
 }
 
@@ -1187,6 +1217,7 @@ function deleteSelectedAssets() {
   state.multiSelect = false;
   multiSelectBtn.classList.remove('active');
   persistState();
+  scheduleCloudSync();
   renderLibrary();
   updateMultiBar();
   showToast('已删除所选素材');
@@ -1352,6 +1383,197 @@ function formatFileSize(bytes) {
   return `${value.toFixed(digits)} ${units[unit]}`;
 }
 
+function getSyncConfig() {
+  let token = '';
+  let repo = 'liuxing199710xx-cpu/inspiration-drawer';
+  try {
+    token = localStorage.getItem(SYNC_TOKEN_KEY) || '';
+    repo = localStorage.getItem(SYNC_REPO_KEY) || repo;
+  } catch (error) {
+    // 本地存储异常时使用默认值。
+  }
+  return { token, repo };
+}
+
+function getSyncedFileIds() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SYNC_FILES_KEY) || '[]');
+    return Array.isArray(raw) ? raw.filter((item) => typeof item === 'string') : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function markSyncedFileId(id) {
+  try {
+    const ids = getSyncedFileIds();
+    if (!ids.includes(id)) ids.push(id);
+    localStorage.setItem(SYNC_FILES_KEY, JSON.stringify(ids));
+  } catch (error) {
+    // 本地空间不足时不影响本次同步。
+  }
+}
+
+function fileExtForAsset(asset, blob) {
+  const mimeExt = {
+    'image/png': 'png',
+    'image/jpeg': 'jpg',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+    'video/mp4': 'mp4',
+    'video/quicktime': 'mov',
+    'video/webm': 'webm',
+    'application/pdf': 'pdf'
+  };
+  if (blob && mimeExt[blob.type]) return mimeExt[blob.type];
+  if (asset.fileExt) return asset.fileExt;
+  if (asset.type === 'pdf') return 'pdf';
+  if (asset.type === 'video') return 'mp4';
+  return 'jpg';
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+function dataUrlToBlob(dataUrl) {
+  return fetch(dataUrl).then((res) => res.blob());
+}
+
+async function uploadRepoFile(repo, token, path, blob, message) {
+  const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+  const url = `https://api.github.com/repos/${repo}/contents/${encodedPath}`;
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/vnd.github+json',
+    'Content-Type': 'application/json'
+  };
+  const existing = await fetch(url, { headers });
+  let sha = null;
+  if (existing.ok) sha = (await existing.json()).sha;
+  const body = { message, content: await blobToBase64(blob), branch: 'main' };
+  if (sha) body.sha = sha;
+  const putRes = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) });
+  if (!putRes.ok) {
+    const errorBody = await putRes.json().catch(() => ({}));
+    throw new Error(errorBody.message || `GitHub 返回 ${putRes.status}`);
+  }
+}
+
+async function loadSharedLibrary() {
+  try {
+    const res = await fetch(`shared/library.json?ts=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (error) {
+    return null;
+  }
+}
+
+function applySharedData(data) {
+  const assets = Array.isArray(data.assets) ? data.assets.map((asset) => ({ ...asset })) : [];
+  const folders = Array.isArray(data.folderOrder) && data.folderOrder.length
+    ? data.folderOrder
+    : [...new Set(assets.map((asset) => asset.folder).filter((folder) => folder && folder !== '全部素材' && folder !== '我的收藏'))];
+  state.assets = assets;
+  state.folderOrder = folders;
+  state.folderNames = data.folderNames || Object.fromEntries(folders.map((folder) => [folder, folder]));
+  state.folderParents = data.folderParents || Object.fromEntries(folders.map((folder) => [folder, null]));
+  state.selectedId = assets[0]?.id || null;
+}
+
+function openSyncSetup() {
+  const token = window.prompt('请输入 GitHub Token（GitHub → Settings → Developer settings → Personal access tokens 创建，勾选 repo 权限）');
+  if (!token) return;
+  localStorage.setItem(SYNC_TOKEN_KEY, token.trim());
+  const repo = window.prompt('请输入仓库名（默认 liuxing199710xx-cpu/inspiration-drawer）', 'liuxing199710xx-cpu/inspiration-drawer');
+  if (repo && repo.trim()) localStorage.setItem(SYNC_REPO_KEY, repo.trim());
+  syncToCloud();
+}
+
+async function syncToCloud() {
+  if (VIEW_MODE) return;
+  const { token, repo } = getSyncConfig();
+  if (!token) {
+    openSyncSetup();
+    return;
+  }
+  try {
+    showToast('正在同步到云端…');
+    const syncedIds = new Set(getSyncedFileIds());
+    const pending = state.assets.filter((asset) => asset.srcKey && !syncedIds.has(asset.id));
+    let done = 0;
+
+    for (const asset of pending) {
+      const blob = await readUploadBlob(asset.srcKey).catch(() => null);
+      if (!blob) continue;
+      const ext = fileExtForAsset(asset, blob);
+      asset.fileExt = ext;
+      await uploadRepoFile(repo, token, `shared/media/${asset.id}.${ext}`, blob, `同步素材：${asset.title}`);
+      if (asset.poster && asset.poster.startsWith('data:')) {
+        const posterBlob = await dataUrlToBlob(asset.poster);
+        await uploadRepoFile(repo, token, `shared/media/${asset.id}-poster.jpg`, posterBlob, `同步封面：${asset.title}`);
+      }
+      markSyncedFileId(asset.id);
+      syncedIds.add(asset.id);
+      done += 1;
+      showToast(`正在同步 ${done}/${pending.length}`);
+    }
+
+    const cloudAssets = state.assets.map((asset) => {
+      const copy = { ...asset };
+      if (copy.srcKey) {
+        const ext = copy.fileExt || (() => {
+          const mimeExt = {
+            'image/png': 'png',
+            'image/jpeg': 'jpg',
+            'image/gif': 'gif',
+            'image/webp': 'webp',
+            'video/mp4': 'mp4',
+            'video/quicktime': 'mov',
+            'video/webm': 'webm',
+            'application/pdf': 'pdf'
+          };
+          return copy.type === 'pdf' ? 'pdf' : copy.type === 'video' ? 'mp4' : 'jpg';
+        })();
+        copy.src = `shared/media/${copy.id}.${ext}`;
+        delete copy.srcKey;
+        delete copy.pages;
+        if (copy.poster && copy.poster.startsWith('data:')) copy.poster = `shared/media/${copy.id}-poster.jpg`;
+      }
+      return copy;
+    });
+
+    const libraryData = {
+      assets: cloudAssets,
+      folderOrder: state.folderOrder,
+      folderNames: state.folderNames,
+      folderParents: state.folderParents,
+      updatedAt: new Date().toISOString()
+    };
+    const libraryBlob = new Blob([JSON.stringify(libraryData, null, 2)], { type: 'application/json' });
+    await uploadRepoFile(repo, token, 'shared/library.json', libraryBlob, '同步素材库');
+    showToast('同步完成，手机刷新即可查看');
+  } catch (error) {
+    showToast(`同步失败：${error.message || error}`);
+  }
+}
+
+let cloudSyncTimer = null;
+function scheduleCloudSync() {
+  if (VIEW_MODE) return;
+  if (!getSyncConfig().token) return;
+  window.clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = window.setTimeout(() => {
+    syncToCloud();
+  }, 3000);
+}
+
 let uploadSeq = 0;
 
 async function addFiles(fileList) {
@@ -1378,6 +1600,7 @@ async function addFiles(fileList) {
       title: file.name.replace(/\.[^.]+$/, '') || '未命名素材',
       src,
       srcKey: assetId,
+      fileExt: (file.name.match(/\.([a-z0-9]+)$/i) || [])[1]?.toLowerCase() || '',
       added: todayISO(),
       favorite: false
     };
@@ -1428,6 +1651,7 @@ async function addFiles(fileList) {
   state.inspectorOpen = true;
   renderLibrary();
   showToast(`${files.length} 个素材已加入`);
+  scheduleCloudSync();
 }
 
 function closeSidebar() {
@@ -1640,6 +1864,7 @@ document.addEventListener('input', (event) => {
   if (asset) {
     asset.notes = textarea.value;
     persistState();
+    scheduleCloudSync();
   }
 });
 
@@ -1848,6 +2073,15 @@ shareBtn.addEventListener('click', async () => {
     showToast('查看链接已复制');
   } catch {
     showToast(url);
+  }
+});
+
+syncBtn.addEventListener('click', () => {
+  if (VIEW_MODE) return;
+  if (!getSyncConfig().token) {
+    openSyncSetup();
+  } else {
+    syncToCloud();
   }
 });
 
