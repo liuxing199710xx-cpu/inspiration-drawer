@@ -33,7 +33,7 @@ const UNLOCK_KEY = 'inspirationDrawerUnlocked';
 let editUnlocked = false;
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260826d';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901a';
 }
 
 const TYPE_LABELS = {
@@ -356,13 +356,13 @@ async function readUploadRecord(id) {
   });
 }
 
-async function savePdfPages(id, pages) {
+async function savePdfPages(id, pages, pdfRatio) {
   const record = await readUploadRecord(id).catch(() => null);
   if (!record) return;
   const db = await getUploadDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction('uploads', 'readwrite');
-    tx.objectStore('uploads').put({ ...record, pages });
+    tx.objectStore('uploads').put({ ...record, pages, pdfRatio });
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
@@ -418,17 +418,28 @@ async function loadPersistedState() {
       const restored = { ...asset, src: URL.createObjectURL(record.blob) };
       if (asset.type === 'pdf') {
         if (Array.isArray(record.pages) && record.pages.length) {
-          restored.pages = record.pages;
-          restored.poster = record.pages[0] || null;
+          const posterSrc = record.pages[0];
+          restored.pages = [posterSrc];
+          restored.poster = posterSrc || null;
           restored.posterVersion = 'pages-v1';
+          if (record.pdfRatio) {
+            restored.ratio = record.pdfRatio;
+          } else {
+            const size = await dataUrlImageSize(posterSrc).catch(() => null);
+            restored.ratio = size ? `${size.width} / ${size.height}` : (asset.ratio && asset.ratio !== 'auto' ? asset.ratio : '4 / 3');
+          }
+          if (!record.pdfRatio || record.pages.length !== 1) {
+            await savePdfPages(asset.srcKey, [posterSrc], restored.ratio).catch(() => {});
+          }
         } else {
           const pdfInfo = await readPdfPages(record.blob).catch(() => null);
           if (pdfInfo) {
             restored.pages = pdfInfo.pages;
             restored.poster = pdfInfo.pages[0] || null;
+            restored.ratio = pdfInfo.ratio;
             restored.posterVersion = 'pages-v1';
             restored.dimensions = `${pdfInfo.pageCount} 页 · ${restored.dimensions || ''}`;
-            await savePdfPages(asset.srcKey, pdfInfo.pages).catch(() => {});
+            await savePdfPages(asset.srcKey, pdfInfo.pages, pdfInfo.ratio).catch(() => {});
           }
         }
       }
@@ -594,21 +605,9 @@ function renderMedia(asset, controls = false, thumbnail = false) {
 
   if (asset.type === 'pdf') {
     if (!controls) {
-      if (thumbnail) {
-        const posterSrc = asset.poster || (asset.pages && asset.pages[0]) || '';
-        if (posterSrc) {
-          return `<img class="pdf-poster" src="${posterSrc}" alt="${escapeHtml(asset.title)}" loading="lazy">`;
-        }
-        return `<iframe class="pdf-card-frame" src="${asset.src}#toolbar=0&navpanes=0&view=FitH" scrolling="no" title="${escapeHtml(asset.title)}" loading="lazy"></iframe>`;
-      }
-      if (Array.isArray(asset.pages) && asset.pages.length) {
-        const pageImages = asset.pages.map((src) => (
-          `<img src="${src}" alt="${escapeHtml(asset.title)}" loading="lazy">`
-        )).join('');
-        return `<div class="pdf-pages">${pageImages}</div>`;
-      }
-      if (asset.poster) {
-        return `<img class="pdf-poster" src="${asset.poster}" alt="${escapeHtml(asset.title)}" loading="lazy">`;
+      const posterSrc = asset.poster || (asset.pages && asset.pages[0]) || '';
+      if (posterSrc) {
+        return `<img class="pdf-poster" src="${posterSrc}" alt="${escapeHtml(asset.title)}" loading="lazy">`;
       }
       return `<iframe class="pdf-card-frame" src="${asset.src}#toolbar=0&navpanes=0&view=FitH" scrolling="no" title="${escapeHtml(asset.title)}" loading="lazy"></iframe>`;
     }
@@ -634,9 +633,7 @@ function renderCard(asset, index) {
   const selected = state.multiSelect ? state.selectedIds.has(asset.id) : asset.id === state.selectedId;
   const selectedClass = selected ? ' selected' : '';
   const badgeColor = TYPE_BADGES[asset.type] || 'var(--ink-muted)';
-  const mediaStyle = asset.type === 'pdf'
-    ? `--badge-color:${badgeColor}`
-    : `aspect-ratio:${asset.ratio || '4 / 3'};--badge-color:${badgeColor}`;
+  const mediaStyle = `aspect-ratio:${asset.ratio || '4 / 3'};--badge-color:${badgeColor}`;
   return `
     <article class="asset-card${selectedClass}" data-id="${asset.id}" tabindex="0" role="button" aria-label="${escapeHtml(asset.title)}">
       <div class="asset-media${asset.type === 'pdf' ? ' pdf-card' : ''}" data-expand="${asset.id}" style="${mediaStyle}">
@@ -662,7 +659,7 @@ function renderRow(asset, index) {
   return `
     <article class="asset-row${selectedClass}" data-id="${asset.id}" tabindex="0" role="button" aria-label="${escapeHtml(asset.title)}">
       <div class="row-thumb" data-expand="${asset.id}">
-        ${renderMedia(asset, false, true)}
+        ${renderMedia(asset)}
         ${state.multiSelect ? `<button class="multi-check row-multi-check${selected ? ' checked' : ''}" data-multi-toggle="${asset.id}" type="button" aria-label="选择 ${escapeHtml(asset.title)}">${icon('check')}</button>` : ''}
       </div>
       <div class="row-body">
@@ -1157,6 +1154,15 @@ function readImageSize(src) {
   });
 }
 
+function dataUrlImageSize(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
 function readVideoSize(src) {
   return new Promise((resolve) => {
     const video = document.createElement('video');
@@ -1228,14 +1234,16 @@ function readPdfPages(blob) {
       const pageCount = pdf.numPages;
       const targetWidth = 480;
       const pages = [];
+      let coverHeight = 1;
 
-      for (let i = 1; i <= pageCount; i += 1) {
-        const page = await pdf.getPage(i);
+      if (pageCount > 0) {
+        const page = await pdf.getPage(1);
         const base = page.getViewport({ scale: 1 });
         const viewport = page.getViewport({ scale: targetWidth / base.width });
         const canvas = document.createElement('canvas');
         canvas.width = Math.round(viewport.width);
-        canvas.height = Math.ceil(viewport.height);
+        coverHeight = Math.ceil(viewport.height);
+        canvas.height = coverHeight;
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = '#fff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1249,7 +1257,7 @@ function readPdfPages(blob) {
       resolve({
         pages,
         pageCount,
-        ratio: 'auto'
+        ratio: `${targetWidth} / ${coverHeight}`
       });
     } catch (error) {
       window.clearTimeout(timer);
@@ -1305,7 +1313,7 @@ async function addFiles(fileList) {
     await saveUploadBlob(assetId, file).catch(() => {});
 
     if (isPdf) {
-      await savePdfPages(assetId, pdfInfo?.pages || []).catch(() => {});
+      await savePdfPages(assetId, pdfInfo?.pages || [], pdfInfo?.ratio).catch(() => {});
       state.assets.unshift({
         ...common,
         type: 'pdf',
@@ -1314,7 +1322,7 @@ async function addFiles(fileList) {
         pages: pdfInfo?.pages || [],
         poster: pdfInfo?.pages?.[0] || null,
         posterVersion: pdfInfo ? 'pages-v1' : null,
-        ratio: 'auto',
+        ratio: pdfInfo?.ratio || '4 / 3',
         dimensions: pdfInfo
           ? `${pdfInfo.pageCount} 页 · ${formatFileSize(file.size)}`
           : formatFileSize(file.size),
