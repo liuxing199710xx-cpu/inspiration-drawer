@@ -61,7 +61,7 @@ document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebar
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901j';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901k';
 }
 
 const TYPE_LABELS = {
@@ -654,6 +654,10 @@ function renderMedia(asset, controls = false, thumbnail = false) {
   }
 
   if (asset.type === 'pdf') {
+    if (asset.previewOnly) {
+      const previewSrc = asset.poster || asset.src;
+      return `<img class="pdf-poster" src="${previewSrc}" alt="${escapeHtml(asset.title)}" loading="lazy">`;
+    }
     if (!controls) {
       const posterSrc = asset.poster || (asset.pages && asset.pages[0]) || '';
       if (posterSrc) {
@@ -669,6 +673,10 @@ function renderMedia(asset, controls = false, thumbnail = false) {
   }
 
   if (asset.type === 'video') {
+    if (asset.previewOnly) {
+      const previewSrc = asset.poster || asset.src;
+      return `<img src="${previewSrc}" alt="${escapeHtml(asset.title)}" loading="lazy">`;
+    }
     const posterAttr = asset.poster ? ` poster="${asset.poster}"` : '';
     if (!controls && asset.poster) {
       return `<img src="${asset.poster}" alt="${escapeHtml(asset.title)}" loading="lazy">`;
@@ -1395,20 +1403,24 @@ function getSyncConfig() {
   return { token, repo };
 }
 
-function getSyncedFileIds() {
+function getSyncedFiles() {
   try {
-    const raw = JSON.parse(localStorage.getItem(SYNC_FILES_KEY) || '[]');
-    return Array.isArray(raw) ? raw.filter((item) => typeof item === 'string') : [];
+    const raw = JSON.parse(localStorage.getItem(SYNC_FILES_KEY) || '{}');
+    return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
   } catch (error) {
-    return [];
+    return {};
   }
 }
 
-function markSyncedFileId(id) {
+function getSyncedFileIds() {
+  return Object.keys(getSyncedFiles());
+}
+
+function markSyncedFile(id, urls) {
   try {
-    const ids = getSyncedFileIds();
-    if (!ids.includes(id)) ids.push(id);
-    localStorage.setItem(SYNC_FILES_KEY, JSON.stringify(ids));
+    const synced = getSyncedFiles();
+    synced[id] = urls || {};
+    localStorage.setItem(SYNC_FILES_KEY, JSON.stringify(synced));
   } catch (error) {
     // 本地空间不足时不影响本次同步。
   }
@@ -1465,6 +1477,11 @@ async function uploadRepoFile(repo, token, path, blob, message) {
   }
 }
 
+function isTooLargeError(error) {
+  const message = String(error.message || error);
+  return /too large|413/i.test(message);
+}
+
 async function loadSharedLibrary() {
   try {
     const res = await fetch(`shared/library.json?ts=${Date.now()}`, { cache: 'no-store' });
@@ -1505,8 +1522,9 @@ async function syncToCloud() {
   }
   try {
     showToast('正在同步到云端…');
-    const syncedIds = new Set(getSyncedFileIds());
-    const pending = state.assets.filter((asset) => asset.srcKey && !syncedIds.has(asset.id));
+    const syncedFiles = getSyncedFiles();
+    const pending = state.assets.filter((asset) => asset.srcKey && !syncedFiles[asset.id]);
+    const cloudUrlById = {};
     let done = 0;
 
     for (const asset of pending) {
@@ -1514,13 +1532,43 @@ async function syncToCloud() {
       if (!blob) continue;
       const ext = fileExtForAsset(asset, blob);
       asset.fileExt = ext;
-      await uploadRepoFile(repo, token, `shared/media/${asset.id}.${ext}`, blob, `同步素材：${asset.title}`);
-      if (asset.poster && asset.poster.startsWith('data:')) {
-        const posterBlob = await dataUrlToBlob(asset.poster);
-        await uploadRepoFile(repo, token, `shared/media/${asset.id}-poster.jpg`, posterBlob, `同步封面：${asset.title}`);
+      const urls = {};
+      try {
+        urls.src = await uploadRepoFile(
+          repo,
+          token,
+          `shared/media/${asset.id}.${ext}`,
+          blob,
+          `同步素材：${asset.title}`
+        );
+        if (asset.poster && asset.poster.startsWith('data:')) {
+          const posterBlob = await dataUrlToBlob(asset.poster);
+          urls.poster = await uploadRepoFile(
+            repo,
+            token,
+            `shared/media/${asset.id}-poster.jpg`,
+            posterBlob,
+            `同步封面：${asset.title}`
+          );
+        }
+      } catch (error) {
+        if (!isTooLargeError(error)) throw error;
+        urls.previewOnly = true;
+        if (asset.poster && asset.poster.startsWith('data:')) {
+          const posterBlob = await dataUrlToBlob(asset.poster);
+          urls.poster = await uploadRepoFile(
+            repo,
+            token,
+            `shared/media/${asset.id}-poster.jpg`,
+            posterBlob,
+            `同步封面：${asset.title}`
+          );
+          urls.src = urls.poster;
+        }
+        showToast(`${asset.title} 文件较大，已使用封面预览同步`);
       }
-      markSyncedFileId(asset.id);
-      syncedIds.add(asset.id);
+      cloudUrlById[asset.id] = urls;
+      markSyncedFile(asset.id, urls);
       done += 1;
       showToast(`正在同步 ${done}/${pending.length}`);
     }
@@ -1528,23 +1576,14 @@ async function syncToCloud() {
     const cloudAssets = state.assets.map((asset) => {
       const copy = { ...asset };
       if (copy.srcKey) {
-        const ext = copy.fileExt || (() => {
-          const mimeExt = {
-            'image/png': 'png',
-            'image/jpeg': 'jpg',
-            'image/gif': 'gif',
-            'image/webp': 'webp',
-            'video/mp4': 'mp4',
-            'video/quicktime': 'mov',
-            'video/webm': 'webm',
-            'application/pdf': 'pdf'
-          };
-          return copy.type === 'pdf' ? 'pdf' : copy.type === 'video' ? 'mp4' : 'jpg';
-        })();
-        copy.src = `shared/media/${copy.id}.${ext}`;
+        const syncedUrl = cloudUrlById[copy.id] || syncedFiles[copy.id];
+        copy.src = syncedUrl?.src || `shared/media/${copy.id}.${copy.fileExt || (copy.type === 'pdf' ? 'pdf' : copy.type === 'video' ? 'mp4' : 'jpg')}`;
+        if (syncedUrl?.previewOnly) copy.previewOnly = true;
         delete copy.srcKey;
         delete copy.pages;
-        if (copy.poster && copy.poster.startsWith('data:')) copy.poster = `shared/media/${copy.id}-poster.jpg`;
+        if (copy.poster && copy.poster.startsWith('data:')) {
+          copy.poster = syncedUrl?.poster || `shared/media/${copy.id}-poster.jpg`;
+        }
       }
       return copy;
     });
