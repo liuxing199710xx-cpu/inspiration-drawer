@@ -30,8 +30,19 @@ const VIEW_MODE = URL_PARAMS.has('view');
 const DEFAULT_PASSWORD = '123456';
 const STORAGE_KEY = 'inspirationDrawerDataV1';
 const UNLOCK_KEY = 'inspirationDrawerUnlocked';
+const SIDEBAR_WIDTH_KEY = 'inspirationDrawerSidebarWidth';
 const INSPECTOR_WIDTH_KEY = 'inspirationDrawerInspectorWidth';
 let editUnlocked = false;
+
+function getSavedSidebarWidth() {
+  try {
+    const value = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY));
+    if (value >= 200 && value <= 420) return value;
+  } catch (error) {
+    // 本地空间异常时使用默认宽度。
+  }
+  return 264;
+}
 
 function getSavedInspectorWidth() {
   try {
@@ -43,10 +54,11 @@ function getSavedInspectorWidth() {
   return 360;
 }
 
+document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebarWidth()}px`);
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901e';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901f';
 }
 
 const TYPE_LABELS = {
@@ -253,6 +265,7 @@ const state = {
 const $ = (selector) => document.querySelector(selector);
 const sidebar = $('#sidebar');
 const sidebarBackdrop = $('#sidebarBackdrop');
+const sidebarResizer = $('#sidebarResizer');
 const library = $('#library');
 const libraryGrid = $('#libraryGrid');
 const libraryList = $('#libraryList');
@@ -1760,6 +1773,30 @@ fileInput.addEventListener('change', () => {
   addFiles(fileInput.files);
   fileInput.value = '';
 });
+
+let sidebarDrag = null;
+sidebarResizer.addEventListener('pointerdown', (event) => {
+  event.preventDefault();
+  sidebarResizer.classList.add('dragging');
+  sidebarDrag = { startX: event.clientX, startWidth: getSavedSidebarWidth() };
+  sidebarResizer.setPointerCapture(event.pointerId);
+});
+sidebarResizer.addEventListener('pointermove', (event) => {
+  if (!sidebarDrag) return;
+  const nextWidth = Math.round(Math.min(420, Math.max(200, sidebarDrag.startWidth + event.clientX - sidebarDrag.startX)));
+  document.documentElement.style.setProperty('--sidebar-width', `${nextWidth}px`);
+  try {
+    localStorage.setItem(SIDEBAR_WIDTH_KEY, String(nextWidth));
+  } catch (error) {
+    // 本地存储异常时只保留当前页面宽度。
+  }
+});
+function stopSidebarDrag() {
+  sidebarDrag = null;
+  sidebarResizer.classList.remove('dragging');
+}
+sidebarResizer.addEventListener('pointerup', stopSidebarDrag);
+sidebarResizer.addEventListener('pointercancel', stopSidebarDrag);
 
 let inspectorDrag = null;
 inspectorResizer.addEventListener('pointerdown', (event) => {
