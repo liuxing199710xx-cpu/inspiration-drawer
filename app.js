@@ -58,7 +58,7 @@ document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebar
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901h';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901i';
 }
 
 const TYPE_LABELS = {
@@ -709,8 +709,8 @@ function renderNav() {
           <span class="nav-icon">${icon('folder')}</span>
           <span class="nav-name">${escapeHtml(label || displayFolderName(folder))}</span>
         </button>
-        <span class="nav-count">${count}</span>
         <div class="nav-actions">${actions}</div>
+        <span class="nav-count">${count}</span>
       </div>`;
   }
 
