@@ -1408,6 +1408,50 @@ select {
   font-size: 12px;
 }
 
+.inspector-tags .tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.inspector-tags .tag-remove {
+  display: grid;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.inspector-tags .tag-remove:hover {
+  background: rgba(10, 5, 4, 0.08);
+  color: var(--accent);
+}
+
+.inspector-tags .tag-remove svg {
+  width: 11px;
+  height: 11px;
+}
+
+.inspector-tags .tag-input {
+  width: 96px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.inspector-tags .tag-input::placeholder {
+  color: var(--ink-muted);
+}
+
 .inspector-palette {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
