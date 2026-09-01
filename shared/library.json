@@ -1,6 +1,25 @@
 {
   "assets": [
     {
+      "id": "upload-1788246964250-0",
+      "title": "Amazon_Day_2026",
+      "src": "shared/media/upload-1788246964250-0.pdf",
+      "fileExt": "pdf",
+      "added": "2026-09-01",
+      "favorite": false,
+      "type": "pdf",
+      "folder": "PDF 文档",
+      "tags": [
+        "Amazon_Day_2026"
+      ],
+      "poster": "shared/media/upload-1788246964250-0-poster.jpg",
+      "posterVersion": "pages-v1",
+      "ratio": "480 / 270",
+      "dimensions": "39 页 · 46.2 MB",
+      "notes": "",
+      "previewOnly": true
+    },
+    {
       "id": "upload-1788243034601-0",
       "title": "PPT模板-大众点评必吃榜颁奖盛典",
       "src": "shared/media/upload-1788243034601-0.pdf",
@@ -88,8 +107,7 @@
       "ratio": "480 / 96",
       "dimensions": "15 页 · 18.5 MB",
       "notes": "",
-      "poster": "shared/media/upload-1788234349178-3-poster.jpg",
-      "fileExt": "pdf"
+      "poster": "shared/media/upload-1788234349178-3-poster.jpg"
     },
     {
       "id": "upload-1788233985226-2",
@@ -106,8 +124,7 @@
       "ratio": "480 / 270",
       "dimensions": "11 页 · 3.91 MB",
       "notes": "",
-      "poster": "shared/media/upload-1788233985226-2-poster.jpg",
-      "fileExt": "pdf"
+      "poster": "shared/media/upload-1788233985226-2-poster.jpg"
     },
     {
       "id": "upload-1788233607103-1",
@@ -124,8 +141,7 @@
       "ratio": "480 / 134",
       "dimensions": "7 页 · 2.31 MB",
       "notes": "从本地导入的 PDF 文档。",
-      "poster": "shared/media/upload-1788233607103-1-poster.jpg",
-      "fileExt": "pdf"
+      "poster": "shared/media/upload-1788233607103-1-poster.jpg"
     },
     {
       "id": "upload-1788232382034-0",
@@ -142,8 +158,7 @@
       "ratio": "480 / 153",
       "dimensions": "10 页 · 4.67 MB",
       "notes": "",
-      "poster": "shared/media/upload-1788232382034-0-poster.jpg",
-      "fileExt": "pdf"
+      "poster": "shared/media/upload-1788232382034-0-poster.jpg"
     },
     {
       "id": "upload-1788231429375-0",
@@ -160,8 +175,7 @@
       "ratio": "480 / 116",
       "dimensions": "10 页 · 4.22 MB",
       "notes": "小红书黑客松巅峰赛",
-      "poster": "shared/media/upload-1788231429375-0-poster.jpg",
-      "fileExt": "pdf"
+      "poster": "shared/media/upload-1788231429375-0-poster.jpg"
     },
     {
       "id": "upload-1787486569589-1",
@@ -179,8 +193,7 @@
       "dimensions": "57 页 · 57 页 · 32.2 MB",
       "notes": "",
       "posterVersion": "pages-v1",
-      "poster": "shared/media/upload-1787486569589-1-poster.jpg",
-      "fileExt": "pdf"
+      "poster": "shared/media/upload-1787486569589-1-poster.jpg"
     },
     {
       "id": "upload-1787486569570-0",
@@ -197,8 +210,7 @@
       "dimensions": "41 页 · 41 页 · 13.6 MB",
       "notes": "从本地导入的 PDF 文档。",
       "posterVersion": "pages-v1",
-      "poster": "shared/media/upload-1787486569570-0-poster.jpg",
-      "fileExt": "pdf"
+      "poster": "shared/media/upload-1787486569570-0-poster.jpg"
     }
   ],
   "folderOrder": [
@@ -216,5 +228,5 @@
     "PDF 文档": null,
     "未分类": null
   },
-  "updatedAt": "2026-09-01T06:54:54.638Z"
+  "updatedAt": "2026-09-01T07:16:35.806Z"
 }
