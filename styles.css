@@ -1452,6 +1452,42 @@ select {
   color: var(--ink-muted);
 }
 
+.inspector-tags .tag-add-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 6px;
+}
+
+.inspector-tags .tag-add-row .tag-input {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
+.inspector-tags .tag-add-btn {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.inspector-tags .tag-add-btn:hover {
+  opacity: 0.88;
+}
+
+.inspector-tags .tag-add-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
 .inspector-palette {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
