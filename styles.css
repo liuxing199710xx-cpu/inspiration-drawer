@@ -265,10 +265,21 @@ button {
 }
 
 .nav-count {
-  margin-left: auto;
+  flex: none;
+  width: 30px;
+  margin-left: 4px;
   color: #A79F98;
   font-family: var(--font-mono);
   font-size: 11px;
+  text-align: right;
+}
+
+.nav-actions {
+  display: flex;
+  flex: none;
+  width: 126px;
+  justify-content: flex-end;
+  gap: 2px;
 }
 
 .folder-edit-btn {
