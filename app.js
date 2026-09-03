@@ -61,7 +61,7 @@ document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebar
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903d';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903e';
 }
 
 const TYPE_LABELS = {
@@ -1609,6 +1609,9 @@ function isTooLargeError(error) {
 }
 
 async function loadSharedLibrary() {
+  if (window.__SHARED_LIBRARY__ && Array.isArray(window.__SHARED_LIBRARY__.assets)) {
+    return window.__SHARED_LIBRARY__;
+  }
   try {
     const res = await fetch(`shared/library.json?ts=${Date.now()}`, { cache: 'no-store' });
     if (!res.ok) return null;
@@ -1739,6 +1742,8 @@ async function syncToCloud() {
     };
     const libraryBlob = new Blob([JSON.stringify(libraryData, null, 2)], { type: 'application/json' });
     await uploadRepoFile(repo, token, 'shared/library.json', libraryBlob, '同步素材库');
+    const libraryJsBlob = new Blob([`window.__SHARED_LIBRARY__ = ${JSON.stringify(libraryData)};\n`], { type: 'application/javascript' });
+    await uploadRepoFile(repo, token, 'shared/library.js', libraryJsBlob, '同步素材库脚本');
     showToast('同步完成，手机刷新即可查看');
   } catch (error) {
     showToast(`同步失败：${error.message || error}`);
