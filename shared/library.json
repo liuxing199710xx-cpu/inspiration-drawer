@@ -96,9 +96,7 @@
       "favorite": false,
       "type": "pdf",
       "folder": "PDF 文档",
-      "tags": [
-        "追觅"
-      ],
+      "tags": [],
       "posterVersion": "pages-v1",
       "ratio": "480 / 160",
       "dimensions": "25 页 · 38.3 MB",
@@ -201,9 +199,7 @@
       "favorite": false,
       "type": "pdf",
       "folder": "PDF 文档",
-      "tags": [
-        "小红书"
-      ],
+      "tags": [],
       "posterVersion": "pages-v1",
       "ratio": "480 / 116",
       "dimensions": "10 页 · 4.22 MB",
@@ -261,5 +257,5 @@
     "PDF 文档": null,
     "未分类": null
   },
-  "updatedAt": "2026-09-03T08:31:53.387Z"
+  "updatedAt": "2026-09-03T08:32:04.043Z"
 }
