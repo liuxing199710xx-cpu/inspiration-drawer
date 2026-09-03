@@ -61,7 +61,7 @@ document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebar
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260901n';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903a';
 }
 
 const TYPE_LABELS = {
@@ -884,9 +884,12 @@ function renderInspector() {
         ${actionArea}
         <button class="action-btn danger${state.confirmDelete ? ' confirm' : ''}" data-action="delete" type="button">${icon('trash')}<span>${state.confirmDelete ? '确认删除' : '删除'}</span></button>
       </div>`;
+  const inspectorMedia = asset.type === 'pdf'
+    ? `<div class="inspector-media">${renderMedia(asset)}<a class="pdf-open" href="${asset.src}" target="_blank" rel="noopener">${icon('fileText')}<span>打开 PDF</span></a></div>`
+    : `<div class="inspector-media" ${mediaZoom}>${renderMedia(asset, true)}</div>`;
 
   inspector.innerHTML = `
-    <div class="inspector-media" ${mediaZoom}>${renderMedia(asset, true)}</div>
+    ${inspectorMedia}
     <div class="inspector-body">
       <div class="inspector-head">
         <div>
@@ -982,7 +985,10 @@ function renderLightbox() {
     ? `<button class="lightbox-action" data-action="download" type="button">${icon('download')}<span>下载</span></button>`
     : '';
 
-  lightboxStage.innerHTML = `<div class="lightbox-media">${renderMedia(asset, true)}</div>`;
+  const lightboxMedia = asset.type === 'pdf'
+    ? `<div class="lightbox-media">${renderMedia(asset)}<a class="pdf-open" href="${asset.src}" target="_blank" rel="noopener">${icon('fileText')}<span>打开 PDF</span></a></div>`
+    : `<div class="lightbox-media">${renderMedia(asset, true)}</div>`;
+  lightboxStage.innerHTML = lightboxMedia;
   lightboxFooter.innerHTML = `
     <div class="lightbox-caption">
       <span class="lightbox-count">${String(index + 1).padStart(2, '0')} / ${String(list.length).padStart(2, '0')}</span>
