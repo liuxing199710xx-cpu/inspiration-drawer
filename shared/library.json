@@ -44,9 +44,7 @@
       "favorite": false,
       "type": "pdf",
       "folder": "PDF 文档",
-      "tags": [
-        "哔哩哔哩"
-      ],
+      "tags": [],
       "posterVersion": "pages-v1",
       "ratio": "480 / 270",
       "dimensions": "22 页 · 22.2 MB",
@@ -131,9 +129,7 @@
       "favorite": false,
       "type": "pdf",
       "folder": "PDF 文档",
-      "tags": [
-        "TCL"
-      ],
+      "tags": [],
       "posterVersion": "pages-v1",
       "ratio": "480 / 96",
       "dimensions": "15 页 · 18.5 MB",
@@ -148,9 +144,7 @@
       "favorite": false,
       "type": "pdf",
       "folder": "PDF 文档",
-      "tags": [
-        "追觅芯片"
-      ],
+      "tags": [],
       "posterVersion": "pages-v1",
       "ratio": "480 / 270",
       "dimensions": "11 页 · 3.91 MB",
@@ -182,9 +176,7 @@
       "favorite": false,
       "type": "pdf",
       "folder": "PDF 文档",
-      "tags": [
-        "飞鹤"
-      ],
+      "tags": [],
       "posterVersion": "pages-v1",
       "ratio": "480 / 153",
       "dimensions": "10 页 · 4.67 MB",
@@ -214,10 +206,7 @@
       "favorite": false,
       "type": "pdf",
       "folder": "PDF 文档",
-      "tags": [
-        "TIK TOK",
-        "抖音"
-      ],
+      "tags": [],
       "ratio": "480 / 275",
       "dimensions": "57 页 · 57 页 · 32.2 MB",
       "notes": "",
@@ -232,9 +221,7 @@
       "favorite": false,
       "type": "pdf",
       "folder": "PDF 文档",
-      "tags": [
-        "飞鹤"
-      ],
+      "tags": [],
       "ratio": "480 / 120",
       "dimensions": "41 页 · 41 页 · 13.6 MB",
       "notes": "从本地导入的 PDF 文档。",
@@ -257,5 +244,5 @@
     "PDF 文档": null,
     "未分类": null
   },
-  "updatedAt": "2026-09-03T08:32:04.043Z"
+  "updatedAt": "2026-09-03T08:32:20.422Z"
 }
