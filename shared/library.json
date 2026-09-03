@@ -9,10 +9,7 @@
       "favorite": false,
       "type": "pdf",
       "folder": "PDF 文档",
-      "tags": [
-        "新加入",
-        "PDF"
-      ],
+      "tags": [],
       "poster": "shared/media/upload-1788424229103-0-poster.jpg",
       "posterVersion": "pages-v1",
       "ratio": "480 / 185",
@@ -264,5 +261,5 @@
     "PDF 文档": null,
     "未分类": null
   },
-  "updatedAt": "2026-09-03T08:31:20.060Z"
+  "updatedAt": "2026-09-03T08:31:53.387Z"
 }
