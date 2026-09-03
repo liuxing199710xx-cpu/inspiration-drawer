@@ -61,7 +61,7 @@ document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebar
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903j';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903k';
 }
 
 const TYPE_LABELS = {
@@ -673,7 +673,6 @@ function renderMedia(asset, controls = false, thumbnail = false) {
     return `
       <div class="pdf-stage">
         <iframe class="pdf-frame" src="${asset.src}" title="${escapeHtml(asset.title)}"></iframe>
-        <a class="pdf-open" href="${asset.src}" target="_blank" rel="noopener">${icon('fileText')}<span>打开 PDF</span></a>
       </div>`;
   }
 
@@ -988,7 +987,7 @@ function renderLightbox() {
     : '';
 
   const lightboxMedia = asset.type === 'pdf'
-    ? `<div class="lightbox-media">${renderMedia(asset)}<button class="pdf-open" data-pdf-view="${asset.id}" type="button">${icon('fileText')}<span>打开 PDF</span></button></div>`
+    ? `<div class="lightbox-media">${asset.previewOnly ? renderMedia(asset) : renderMedia(asset, true)}</div>`
     : `<div class="lightbox-media">${renderMedia(asset, true)}</div>`;
   lightboxStage.innerHTML = lightboxMedia;
   lightboxFooter.innerHTML = `
