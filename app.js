@@ -61,7 +61,7 @@ document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebar
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903b';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903c';
 }
 
 const TYPE_LABELS = {
@@ -292,6 +292,14 @@ const multiCancel = $('#multiCancel');
 const lightbox = $('#lightbox');
 const lightboxStage = $('#lightboxStage');
 const lightboxFooter = $('#lightboxFooter');
+const pdfViewer = $('#pdfViewer');
+const pdfViewerTitle = $('#pdfViewerTitle');
+const pdfViewerPage = $('#pdfViewerPage');
+const pdfViewerLoading = $('#pdfViewerLoading');
+const pdfViewerStage = $('#pdfViewerStage');
+const pdfViewerCanvas = $('#pdfViewerCanvas');
+const pdfViewerPrev = $('#pdfViewerPrev');
+const pdfViewerNext = $('#pdfViewerNext');
 const modeBadge = $('#modeBadge');
 const newFolderBtn = $('#newFolderBtn');
 const shareBtn = $('#shareBtn');
@@ -890,7 +898,7 @@ function renderInspector() {
         <button class="action-btn danger${state.confirmDelete ? ' confirm' : ''}" data-action="delete" type="button">${icon('trash')}<span>${state.confirmDelete ? '确认删除' : '删除'}</span></button>
       </div>`;
   const inspectorMedia = asset.type === 'pdf'
-    ? `<div class="inspector-media">${renderMedia(asset)}<a class="pdf-open" href="${asset.src}" target="_blank" rel="noopener">${icon('fileText')}<span>打开 PDF</span></a></div>`
+    ? `<div class="inspector-media">${renderMedia(asset)}<button class="pdf-open" data-pdf-view="${asset.id}" type="button">${icon('fileText')}<span>打开 PDF</span></button></div>`
     : `<div class="inspector-media" ${mediaZoom}>${renderMedia(asset, true)}</div>`;
 
   inspector.innerHTML = `
@@ -991,7 +999,7 @@ function renderLightbox() {
     : '';
 
   const lightboxMedia = asset.type === 'pdf'
-    ? `<div class="lightbox-media">${renderMedia(asset)}<a class="pdf-open" href="${asset.src}" target="_blank" rel="noopener">${icon('fileText')}<span>打开 PDF</span></a></div>`
+    ? `<div class="lightbox-media">${renderMedia(asset)}<button class="pdf-open" data-pdf-view="${asset.id}" type="button">${icon('fileText')}<span>打开 PDF</span></button></div>`
     : `<div class="lightbox-media">${renderMedia(asset, true)}</div>`;
   lightboxStage.innerHTML = lightboxMedia;
   lightboxFooter.innerHTML = `
@@ -1021,7 +1029,102 @@ function renderLightbox() {
   focusTitleEditor();
 }
 
+let pdfDoc = null;
+let pdfCurrentPage = 1;
+let pdfRendering = false;
+let pdfOpenAssetId = null;
+
+async function renderPdfPage(pageNumber) {
+  if (!pdfDoc) return;
+  pdfRendering = true;
+  pdfViewerLoading.hidden = false;
+  try {
+    const page = await pdfDoc.getPage(pageNumber);
+    const stageWidth = Math.max(300, Math.min(pdfViewerStage.clientWidth || window.innerWidth, 1000));
+    const base = page.getViewport({ scale: 1 });
+    const scale = stageWidth / base.width;
+    const viewport = page.getViewport({ scale });
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    pdfViewerCanvas.width = Math.floor(viewport.width * dpr);
+    pdfViewerCanvas.height = Math.floor(viewport.height * dpr);
+    pdfViewerCanvas.style.width = `${Math.floor(viewport.width)}px`;
+    pdfViewerCanvas.style.height = `${Math.floor(viewport.height)}px`;
+    const ctx = pdfViewerCanvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, viewport.width, viewport.height);
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    page.cleanup();
+    pdfCurrentPage = pageNumber;
+    pdfViewerPage.textContent = `${pageNumber} / ${pdfDoc.numPages}`;
+    pdfViewerPrev.disabled = pageNumber <= 1;
+    pdfViewerNext.disabled = pageNumber >= pdfDoc.numPages;
+  } finally {
+    pdfRendering = false;
+    pdfViewerLoading.hidden = true;
+  }
+}
+
+async function openPdfViewer(id) {
+  const asset = state.assets.find((item) => item.id === id);
+  if (!asset || !window.pdfjsLib) return;
+  if (asset.previewOnly) {
+    showToast('云端只保留封面预览，无法打开完整 PDF');
+    return;
+  }
+  state.selectedId = id;
+  state.inspectorOpen = true;
+  state.lightboxId = null;
+  pdfOpenAssetId = id;
+  pdfViewerTitle.textContent = asset.title;
+  pdfViewer.hidden = false;
+  pdfViewerCanvas.width = 0;
+  pdfViewerCanvas.height = 0;
+  document.body.style.overflow = 'hidden';
+  requestAnimationFrame(() => pdfViewer.classList.add('open'));
+  pdfViewerPage.textContent = '加载中…';
+  pdfViewerLoading.hidden = false;
+  if (pdfDoc) {
+    try { await pdfDoc.destroy(); } catch (error) { /* 忽略销毁错误 */ }
+    pdfDoc = null;
+  }
+  try {
+    const loadingTask = window.pdfjsLib.getDocument({ url: asset.src });
+    pdfDoc = await loadingTask.promise;
+    await renderPdfPage(1);
+  } catch (error) {
+    showToast('PDF 加载失败，请稍后重试');
+    closePdfViewer();
+  }
+}
+
+function closePdfViewer() {
+  pdfViewer.classList.remove('open');
+  document.body.style.overflow = '';
+  pdfOpenAssetId = null;
+  if (pdfDoc) {
+    pdfDoc.destroy().catch(() => {});
+    pdfDoc = null;
+  }
+  window.setTimeout(() => {
+    if (!pdfOpenAssetId) pdfViewer.hidden = true;
+  }, 180);
+}
+
+pdfViewerClose.addEventListener('click', closePdfViewer);
+pdfViewerPrev.addEventListener('click', () => {
+  if (pdfDoc && pdfCurrentPage > 1 && !pdfRendering) renderPdfPage(pdfCurrentPage - 1);
+});
+pdfViewerNext.addEventListener('click', () => {
+  if (pdfDoc && pdfCurrentPage < pdfDoc.numPages && !pdfRendering) renderPdfPage(pdfCurrentPage + 1);
+});
+
 function openLightbox(id) {
+  const asset = state.assets.find((item) => item.id === id);
+  if (asset?.type === 'pdf' && !asset.previewOnly) {
+    openPdfViewer(id);
+    return;
+  }
   state.selectedId = id;
   state.inspectorOpen = true;
   state.lightboxId = id;
@@ -1746,6 +1849,14 @@ function closeSidebar() {
 }
 
 document.addEventListener('click', (event) => {
+  const pdfViewButton = event.target.closest('[data-pdf-view]');
+  if (pdfViewButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    openPdfViewer(pdfViewButton.dataset.pdfView);
+    return;
+  }
+
   const tagRemoveButton = event.target.closest('[data-tag-remove]');
   if (tagRemoveButton) {
     if (VIEW_MODE) return;
