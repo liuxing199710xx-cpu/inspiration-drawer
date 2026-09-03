@@ -61,7 +61,7 @@ document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebar
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903c';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903d';
 }
 
 const TYPE_LABELS = {
@@ -448,22 +448,14 @@ async function loadPersistedState() {
     data = null;
   }
 
-  if (VIEW_MODE) {
-    const shared = await loadSharedLibrary();
-    if (shared && Array.isArray(shared.assets) && shared.assets.length) {
-      applySharedData(shared);
-      return;
-    }
+  const shared = await loadSharedLibrary();
+  if (shared && Array.isArray(shared.assets) && shared.assets.length) {
+    applySharedData(shared);
+    if (!VIEW_MODE) persistState();
+    return;
   }
 
-  if (!data || !Array.isArray(data.assets) || !data.assets.length) {
-    const shared = await loadSharedLibrary();
-    if (shared && Array.isArray(shared.assets) && shared.assets.length) {
-      applySharedData(shared);
-      persistState();
-      return;
-    }
-  }
+  if (VIEW_MODE) return;
   if (!data || !Array.isArray(data.assets)) return;
 
   const restoredAssets = [];
