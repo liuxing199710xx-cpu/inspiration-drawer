@@ -61,7 +61,7 @@ document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebar
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903e';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903f';
 }
 
 const TYPE_LABELS = {
@@ -297,9 +297,7 @@ const pdfViewerTitle = $('#pdfViewerTitle');
 const pdfViewerPage = $('#pdfViewerPage');
 const pdfViewerLoading = $('#pdfViewerLoading');
 const pdfViewerStage = $('#pdfViewerStage');
-const pdfViewerCanvas = $('#pdfViewerCanvas');
-const pdfViewerPrev = $('#pdfViewerPrev');
-const pdfViewerNext = $('#pdfViewerNext');
+const pdfViewerPages = $('#pdfViewerPages');
 const modeBadge = $('#modeBadge');
 const newFolderBtn = $('#newFolderBtn');
 const shareBtn = $('#shareBtn');
@@ -1022,39 +1020,89 @@ function renderLightbox() {
 }
 
 let pdfDoc = null;
-let pdfCurrentPage = 1;
-let pdfRendering = false;
 let pdfOpenAssetId = null;
+let pdfPageObserver = null;
+let pdfRenderedPages = new Set();
 
-async function renderPdfPage(pageNumber) {
-  if (!pdfDoc) return;
-  pdfRendering = true;
-  pdfViewerLoading.hidden = false;
+function clearPdfPages() {
+  if (pdfPageObserver) {
+    pdfPageObserver.disconnect();
+    pdfPageObserver = null;
+  }
+  pdfViewerPages.innerHTML = '';
+  pdfRenderedPages.clear();
+}
+
+async function renderPdfPageInto(slot) {
+  const pageNumber = Number(slot.dataset.page);
+  if (!pdfDoc || pdfRenderedPages.has(pageNumber) || slot.dataset.rendering === '1') return;
+  slot.dataset.rendering = '1';
   try {
     const page = await pdfDoc.getPage(pageNumber);
-    const stageWidth = Math.max(300, Math.min(pdfViewerStage.clientWidth || window.innerWidth, 1000));
+    const width = slot.clientWidth || pdfViewerPages.clientWidth || Math.max(300, Math.min(window.innerWidth - 24, 1000));
     const base = page.getViewport({ scale: 1 });
-    const scale = stageWidth / base.width;
+    const scale = width / base.width;
     const viewport = page.getViewport({ scale });
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    pdfViewerCanvas.width = Math.floor(viewport.width * dpr);
-    pdfViewerCanvas.height = Math.floor(viewport.height * dpr);
-    pdfViewerCanvas.style.width = `${Math.floor(viewport.width)}px`;
-    pdfViewerCanvas.style.height = `${Math.floor(viewport.height)}px`;
-    const ctx = pdfViewerCanvas.getContext('2d');
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.floor(viewport.width * dpr);
+    canvas.height = Math.floor(viewport.height * dpr);
+    canvas.style.width = `${Math.floor(viewport.width)}px`;
+    canvas.style.height = `${Math.floor(viewport.height)}px`;
+    const ctx = canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, viewport.width, viewport.height);
     await page.render({ canvasContext: ctx, viewport }).promise;
     page.cleanup();
-    pdfCurrentPage = pageNumber;
-    pdfViewerPage.textContent = `${pageNumber} / ${pdfDoc.numPages}`;
-    pdfViewerPrev.disabled = pageNumber <= 1;
-    pdfViewerNext.disabled = pageNumber >= pdfDoc.numPages;
+    slot.innerHTML = '';
+    slot.appendChild(canvas);
+    pdfRenderedPages.add(pageNumber);
+  } catch (error) {
+    slot.textContent = '此页加载失败';
   } finally {
-    pdfRendering = false;
-    pdfViewerLoading.hidden = true;
+    delete slot.dataset.rendering;
   }
+}
+
+async function buildPdfPages() {
+  clearPdfPages();
+  if (!pdfDoc) return;
+  const numPages = pdfDoc.numPages;
+  pdfViewerPage.textContent = `${numPages} 页`;
+  const stageWidth = Math.max(300, Math.min(pdfViewerStage.clientWidth || window.innerWidth - 24, 1000));
+
+  for (let i = 1; i <= numPages; i += 1) {
+    const slot = document.createElement('div');
+    slot.className = 'pdf-page-slot';
+    slot.dataset.page = String(i);
+    try {
+      const page = await pdfDoc.getPage(i);
+      const base = page.getViewport({ scale: 1 });
+      const viewport = page.getViewport({ scale: stageWidth / base.width });
+      slot.style.height = `${Math.floor(viewport.height)}px`;
+      page.cleanup();
+    } catch (error) {
+      slot.style.height = '420px';
+    }
+    pdfViewerPages.appendChild(slot);
+  }
+
+  pdfViewerLoading.hidden = true;
+  const slots = Array.from(pdfViewerPages.querySelectorAll('.pdf-page-slot'));
+  if (typeof IntersectionObserver === 'undefined') {
+    slots.forEach((slot) => renderPdfPageInto(slot));
+    return;
+  }
+  pdfPageObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) renderPdfPageInto(entry.target);
+    });
+  }, { root: pdfViewerStage, rootMargin: '300px 0px', threshold: 0.01 });
+
+  slots.forEach((slot) => pdfPageObserver.observe(slot));
+  const firstPage = pdfViewerPages.querySelector('.pdf-page-slot');
+  if (firstPage) renderPdfPageInto(firstPage);
 }
 
 async function openPdfViewer(id) {
@@ -1070,8 +1118,7 @@ async function openPdfViewer(id) {
   pdfOpenAssetId = id;
   pdfViewerTitle.textContent = asset.title;
   pdfViewer.hidden = false;
-  pdfViewerCanvas.width = 0;
-  pdfViewerCanvas.height = 0;
+  clearPdfPages();
   document.body.style.overflow = 'hidden';
   requestAnimationFrame(() => pdfViewer.classList.add('open'));
   pdfViewerPage.textContent = '加载中…';
@@ -1083,7 +1130,7 @@ async function openPdfViewer(id) {
   try {
     const loadingTask = window.pdfjsLib.getDocument({ url: asset.src });
     pdfDoc = await loadingTask.promise;
-    await renderPdfPage(1);
+    await buildPdfPages();
   } catch (error) {
     showToast('PDF 加载失败，请稍后重试');
     closePdfViewer();
@@ -1094,6 +1141,7 @@ function closePdfViewer() {
   pdfViewer.classList.remove('open');
   document.body.style.overflow = '';
   pdfOpenAssetId = null;
+  clearPdfPages();
   if (pdfDoc) {
     pdfDoc.destroy().catch(() => {});
     pdfDoc = null;
@@ -1104,12 +1152,6 @@ function closePdfViewer() {
 }
 
 pdfViewerClose.addEventListener('click', closePdfViewer);
-pdfViewerPrev.addEventListener('click', () => {
-  if (pdfDoc && pdfCurrentPage > 1 && !pdfRendering) renderPdfPage(pdfCurrentPage - 1);
-});
-pdfViewerNext.addEventListener('click', () => {
-  if (pdfDoc && pdfCurrentPage < pdfDoc.numPages && !pdfRendering) renderPdfPage(pdfCurrentPage + 1);
-});
 
 function openLightbox(id) {
   const asset = state.assets.find((item) => item.id === id);
