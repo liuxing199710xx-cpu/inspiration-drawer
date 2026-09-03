@@ -12,11 +12,11 @@
       "tags": [
         "哔哩哔哩"
       ],
-      "poster": "shared/media/upload-1788248848576-1-poster.jpg",
       "posterVersion": "pages-v1",
       "ratio": "480 / 270",
       "dimensions": "22 页 · 22.2 MB",
-      "notes": ""
+      "notes": "",
+      "poster": "shared/media/upload-1788248848576-1-poster.jpg"
     },
     {
       "id": "upload-1788247602428-0",
@@ -30,30 +30,11 @@
       "tags": [
         "腾讯云AI产业峰会"
       ],
-      "poster": "shared/media/upload-1788247602428-0-poster.jpg",
       "posterVersion": "pages-v1",
       "ratio": "480 / 97",
       "dimensions": "5 页 · 2.17 MB",
-      "notes": ""
-    },
-    {
-      "id": "upload-1788246964250-0",
-      "title": "Amazon_Day_2026",
-      "src": "shared/media/upload-1788246964250-0.pdf",
-      "fileExt": "pdf",
-      "added": "2026-09-01",
-      "favorite": false,
-      "type": "pdf",
-      "folder": "PDF 文档",
-      "tags": [
-        "Amazon_Day_2026"
-      ],
-      "posterVersion": "pages-v1",
-      "ratio": "480 / 270",
-      "dimensions": "39 页 · 46.2 MB",
       "notes": "",
-      "poster": "shared/media/upload-1788246964250-0-poster.jpg",
-      "previewOnly": true
+      "poster": "shared/media/upload-1788247602428-0-poster.jpg"
     },
     {
       "id": "upload-1788243034601-0",
@@ -264,5 +245,5 @@
     "PDF 文档": null,
     "未分类": null
   },
-  "updatedAt": "2026-09-01T07:47:49.451Z"
+  "updatedAt": "2026-09-03T03:44:03.518Z"
 }
