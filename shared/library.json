@@ -109,25 +109,6 @@
       "poster": "shared/media/upload-1788234922023-5-poster.jpg"
     },
     {
-      "id": "upload-1788234626361-4",
-      "title": "哔哩哔哩-AI创作者Meetup",
-      "src": "shared/media/upload-1788234626361-4.pdf",
-      "added": "2026-09-01",
-      "favorite": false,
-      "type": "pdf",
-      "folder": "PDF 文档",
-      "tags": [
-        "哔哩哔哩"
-      ],
-      "posterVersion": "pages-v1",
-      "ratio": "480 / 185",
-      "dimensions": "12 页 · 45.1 MB",
-      "notes": "",
-      "fileExt": "pdf",
-      "poster": "shared/media/upload-1788234626361-4-poster.jpg",
-      "previewOnly": true
-    },
-    {
       "id": "upload-1788234349178-3",
       "title": "TCL-2026实业全球合作伙伴大会",
       "src": "shared/media/upload-1788234349178-3.pdf",
@@ -263,5 +244,5 @@
     "PDF 文档": null,
     "未分类": null
   },
-  "updatedAt": "2026-09-03T08:20:48.875Z"
+  "updatedAt": "2026-09-03T08:30:18.348Z"
 }
