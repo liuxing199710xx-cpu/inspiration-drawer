@@ -61,7 +61,7 @@ document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebar
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903a';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903b';
 }
 
 const TYPE_LABELS = {
@@ -833,13 +833,18 @@ function saveFolderName(key) {
 }
 
 function renderTypeTabs() {
-  const base = baseFilteredAssets();
-  const buttons = TYPE_TABS.map((tab) => {
-    const count = tab.value === 'all' ? base.length : base.filter((asset) => asset.type === tab.value).length;
-    const active = state.activeType === tab.value ? ' active' : '';
+  const countFolder = (folder) => {
+    if (folder === '全部素材') return state.assets.length;
+    if (folder === '我的收藏') return state.assets.filter((asset) => asset.favorite).length;
+    return state.assets.filter((asset) => folderIncludes(folder, asset.folder)).length;
+  };
+  const folders = ['全部素材', '我的收藏', ...state.folderOrder.filter((folder) => state.folderParents[folder] === null)];
+  const buttons = folders.map((folder) => {
+    const count = countFolder(folder);
+    const active = state.activeFolder === folder && !state.activeTag ? ' active' : '';
     return `
-      <button class="type-tab${active}" data-type="${tab.value}" type="button" role="tab" aria-selected="${state.activeType === tab.value}">
-        <span>${escapeHtml(tab.label)}</span>
+      <button class="type-tab${active}" data-folder="${escapeHtml(folder)}" type="button" role="tab" aria-selected="${active ? 'true' : 'false'}">
+        <span>${escapeHtml(displayFolderName(folder))}</span>
         <span class="type-count">${count}</span>
       </button>`;
   }).join('');
