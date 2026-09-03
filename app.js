@@ -61,7 +61,7 @@ document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebar
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903h';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903i';
 }
 
 const TYPE_LABELS = {
@@ -1150,10 +1150,29 @@ function closePdfViewer() {
 
 pdfViewerClose.addEventListener('click', closePdfViewer);
 
+function prefersDesktop() {
+  return window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+}
+
+function openPdfForDevice(id) {
+  const asset = state.assets.find((item) => item.id === id);
+  if (!asset) return;
+  if (asset.previewOnly) {
+    openPdfViewer(id);
+    return;
+  }
+  if (prefersDesktop()) {
+    const url = new URL(asset.src, window.location.href).href;
+    window.open(url, '_blank', 'noopener');
+    return;
+  }
+  openPdfViewer(id);
+}
+
 function openLightbox(id) {
   const asset = state.assets.find((item) => item.id === id);
   if (asset?.type === 'pdf' && !asset.previewOnly) {
-    openPdfViewer(id);
+    openPdfForDevice(id);
     return;
   }
   state.selectedId = id;
@@ -1889,7 +1908,7 @@ document.addEventListener('click', (event) => {
   if (pdfViewButton) {
     event.preventDefault();
     event.stopPropagation();
-    openPdfViewer(pdfViewButton.dataset.pdfView);
+    openPdfForDevice(pdfViewButton.dataset.pdfView);
     return;
   }
 
