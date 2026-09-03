@@ -1,23 +1,6 @@
 {
   "assets": [
     {
-      "id": "upload-1788424229103-0",
-      "title": "哔哩哔哩-AI创作者Meetup",
-      "src": "shared/media/upload-1788424229103-0.pdf",
-      "fileExt": "pdf",
-      "added": "2026-09-03",
-      "favorite": false,
-      "type": "pdf",
-      "folder": "PDF 文档",
-      "tags": [],
-      "poster": "shared/media/upload-1788424229103-0-poster.jpg",
-      "posterVersion": "pages-v1",
-      "ratio": "480 / 185",
-      "dimensions": "12 页 · 45.1 MB",
-      "notes": "从本地导入的 PDF 文档。",
-      "previewOnly": true
-    },
-    {
       "id": "upload-1788423623698-0",
       "title": "了不起的中国菜物料",
       "src": "shared/media/upload-1788423623698-0.pdf",
@@ -244,5 +227,5 @@
     "PDF 文档": null,
     "未分类": null
   },
-  "updatedAt": "2026-09-03T10:41:41.966Z"
+  "updatedAt": "2026-09-03T10:51:11.404Z"
 }
