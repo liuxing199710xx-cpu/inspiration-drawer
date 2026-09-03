@@ -1,6 +1,22 @@
 {
   "assets": [
     {
+      "id": "upload-1788423623698-0",
+      "title": "了不起的中国菜物料",
+      "src": "shared/media/upload-1788423623698-0.pdf",
+      "fileExt": "pdf",
+      "added": "2026-09-03",
+      "favorite": false,
+      "type": "pdf",
+      "folder": "PDF 文档",
+      "tags": [],
+      "poster": "shared/media/upload-1788423623698-0-poster.jpg",
+      "posterVersion": "pages-v1",
+      "ratio": "480 / 271",
+      "dimensions": "8 页 · 5.30 MB",
+      "notes": ""
+    },
+    {
       "id": "upload-1788248848576-1",
       "title": "哔哩哔哩-IP交流会",
       "src": "shared/media/upload-1788248848576-1.pdf",
@@ -245,5 +261,5 @@
     "PDF 文档": null,
     "未分类": null
   },
-  "updatedAt": "2026-09-03T03:44:03.518Z"
+  "updatedAt": "2026-09-03T08:20:33.515Z"
 }
