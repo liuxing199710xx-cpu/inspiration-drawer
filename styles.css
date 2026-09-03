@@ -2447,17 +2447,28 @@ select {
   flex: 1;
   overflow: auto;
   padding: 16px;
-  text-align: center;
   background: #EDE9E4;
 }
 
-.pdf-viewer-stage canvas {
-  display: block;
-  max-width: 100%;
+.pdf-viewer-pages {
+  width: 100%;
+  max-width: 1000px;
   margin: 0 auto;
+}
+
+.pdf-page-slot {
+  position: relative;
+  margin: 0 0 14px;
+  overflow: hidden;
   border-radius: 4px;
   background: #fff;
   box-shadow: 0 8px 24px rgba(10, 5, 4, 0.16);
+}
+
+.pdf-page-slot canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .pdf-viewer-foot {
