@@ -61,7 +61,7 @@ document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebar
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903f';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903g';
 }
 
 const TYPE_LABELS = {
@@ -295,7 +295,6 @@ const lightboxFooter = $('#lightboxFooter');
 const pdfViewer = $('#pdfViewer');
 const pdfViewerTitle = $('#pdfViewerTitle');
 const pdfViewerPage = $('#pdfViewerPage');
-const pdfViewerLoading = $('#pdfViewerLoading');
 const pdfViewerStage = $('#pdfViewerStage');
 const pdfViewerPages = $('#pdfViewerPages');
 const modeBadge = $('#modeBadge');
@@ -1088,7 +1087,6 @@ async function buildPdfPages() {
     pdfViewerPages.appendChild(slot);
   }
 
-  pdfViewerLoading.hidden = true;
   const slots = Array.from(pdfViewerPages.querySelectorAll('.pdf-page-slot'));
   if (typeof IntersectionObserver === 'undefined') {
     slots.forEach((slot) => renderPdfPageInto(slot));
@@ -1122,7 +1120,6 @@ async function openPdfViewer(id) {
   document.body.style.overflow = 'hidden';
   requestAnimationFrame(() => pdfViewer.classList.add('open'));
   pdfViewerPage.textContent = '加载中…';
-  pdfViewerLoading.hidden = false;
   if (pdfDoc) {
     try { await pdfDoc.destroy(); } catch (error) { /* 忽略销毁错误 */ }
     pdfDoc = null;
