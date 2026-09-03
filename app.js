@@ -61,7 +61,7 @@ document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebar
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903g';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903h';
 }
 
 const TYPE_LABELS = {
@@ -1691,7 +1691,7 @@ async function syncToCloud() {
   try {
     showToast('正在同步到云端…');
     const syncedFiles = getSyncedFiles();
-    const pending = state.assets.filter((asset) => asset.srcKey && !syncedFiles[asset.id]);
+    const pending = state.assets.filter((asset) => asset.srcKey && (!syncedFiles[asset.id] || syncedFiles[asset.id].previewOnly));
     const cloudUrlById = {};
     let done = 0;
 
