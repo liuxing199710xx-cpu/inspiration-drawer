@@ -61,7 +61,7 @@ document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebar
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903i';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903j';
 }
 
 const TYPE_LABELS = {
@@ -1170,11 +1170,6 @@ function openPdfForDevice(id) {
 }
 
 function openLightbox(id) {
-  const asset = state.assets.find((item) => item.id === id);
-  if (asset?.type === 'pdf' && !asset.previewOnly) {
-    openPdfForDevice(id);
-    return;
-  }
   state.selectedId = id;
   state.inspectorOpen = true;
   state.lightboxId = id;
