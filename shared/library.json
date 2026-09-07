@@ -1,6 +1,25 @@
 {
   "assets": [
     {
+      "id": "upload-1788751751086-5",
+      "title": "Paimon 1.0 Unified Lake Format for Data ",
+      "src": "shared/media/upload-1788751751086-5.pdf",
+      "fileExt": "pdf",
+      "added": "2026-09-07",
+      "favorite": false,
+      "type": "pdf",
+      "folder": "PDF 文档",
+      "tags": [
+        "新加入",
+        "PDF"
+      ],
+      "poster": "shared/media/upload-1788751751086-5-poster.jpg",
+      "posterVersion": "pages-v1",
+      "ratio": "480 / 164",
+      "dimensions": "16 页 · 3.23 MB",
+      "notes": ""
+    },
+    {
       "id": "upload-1788751376946-4",
       "title": "阿里云-Flink Forward Asia",
       "src": "shared/media/upload-1788751376946-4.pdf",
@@ -291,5 +310,5 @@
     "PDF 文档": null,
     "未分类": null
   },
-  "updatedAt": "2026-09-07T03:23:18.062Z"
+  "updatedAt": "2026-09-07T03:29:19.730Z"
 }
