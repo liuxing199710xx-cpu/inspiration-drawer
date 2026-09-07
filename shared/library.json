@@ -1,6 +1,25 @@
 {
   "assets": [
     {
+      "id": "upload-1788751376946-4",
+      "title": "阿里云-Flink Forward Asia",
+      "src": "shared/media/upload-1788751376946-4.pdf",
+      "fileExt": "pdf",
+      "added": "2026-09-07",
+      "favorite": false,
+      "type": "pdf",
+      "folder": "视频案例",
+      "tags": [
+        "新加入",
+        "PDF"
+      ],
+      "poster": "shared/media/upload-1788751376946-4-poster.jpg",
+      "posterVersion": "pages-v1",
+      "ratio": "480 / 164",
+      "dimensions": "9 页 · 1.65 MB",
+      "notes": "从本地导入的 PDF 文档。"
+    },
+    {
       "id": "upload-1788751099391-3",
       "title": "AACA模板",
       "src": "shared/media/upload-1788751099391-3.pdf",
@@ -275,5 +294,5 @@
     "PDF 文档": null,
     "未分类": null
   },
-  "updatedAt": "2026-09-07T03:19:05.362Z"
+  "updatedAt": "2026-09-07T03:23:04.905Z"
 }
