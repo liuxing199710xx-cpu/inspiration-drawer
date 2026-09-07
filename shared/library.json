@@ -1,6 +1,22 @@
 {
   "assets": [
     {
+      "id": "upload-1788753118472-1",
+      "title": "磁力聚星闭门会模板",
+      "src": "shared/media/upload-1788753118472-1.pdf",
+      "fileExt": "pdf",
+      "added": "2026-09-07",
+      "favorite": false,
+      "type": "pdf",
+      "folder": "视频案例",
+      "tags": [],
+      "poster": "shared/media/upload-1788753118472-1-poster.jpg",
+      "posterVersion": "pages-v1",
+      "ratio": "480 / 198",
+      "dimensions": "9 页 · 1.21 MB",
+      "notes": ""
+    },
+    {
       "id": "upload-1788753078821-0",
       "title": "钉钉分会-ChatGPT",
       "src": "shared/media/upload-1788753078821-0.pdf",
@@ -326,5 +342,5 @@
     "PDF 文档": null,
     "未分类": null
   },
-  "updatedAt": "2026-09-07T03:51:27.344Z"
+  "updatedAt": "2026-09-07T03:52:06.403Z"
 }
