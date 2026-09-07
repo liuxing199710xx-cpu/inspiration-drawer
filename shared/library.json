@@ -1,6 +1,22 @@
 {
   "assets": [
     {
+      "id": "upload-1788752722729-0",
+      "title": "磁力聚星闭门会模板",
+      "src": "shared/media/upload-1788752722729-0.pdf",
+      "fileExt": "pdf",
+      "added": "2026-09-07",
+      "favorite": false,
+      "type": "pdf",
+      "folder": "PDF 文档",
+      "tags": [],
+      "poster": "shared/media/upload-1788752722729-0-poster.jpg",
+      "posterVersion": "pages-v1",
+      "ratio": "480 / 198",
+      "dimensions": "9 页 · 1.21 MB",
+      "notes": ""
+    },
+    {
       "id": "upload-1788751751086-5",
       "title": "Paimon 1.0 Unified Lake Format for Data ",
       "src": "shared/media/upload-1788751751086-5.pdf",
@@ -310,5 +326,5 @@
     "PDF 文档": null,
     "未分类": null
   },
-  "updatedAt": "2026-09-07T03:29:19.730Z"
+  "updatedAt": "2026-09-07T03:45:35.171Z"
 }
