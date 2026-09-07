@@ -61,7 +61,7 @@ document.documentElement.style.setProperty('--sidebar-width', `${getSavedSidebar
 document.documentElement.style.setProperty('--inspector-width', `${getSavedInspectorWidth()}px`);
 
 if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260903k';
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'assets/pdf/pdf.worker.min.js?v=20260907a';
 }
 
 const TYPE_LABELS = {
@@ -1070,12 +1070,16 @@ async function buildPdfPages() {
   pdfViewerPage.textContent = `${numPages} 页`;
   const stageWidth = Math.max(300, Math.min(pdfViewerStage.clientWidth || window.innerWidth - 24, 1000));
 
-  for (let i = 1; i <= numPages; i += 1) {
+  function createPageSlot(pageNumber) {
     const slot = document.createElement('div');
     slot.className = 'pdf-page-slot';
-    slot.dataset.page = String(i);
+    slot.dataset.page = String(pageNumber);
+    return slot;
+  }
+
+  async function fillPageSlot(pageNumber, slot) {
     try {
-      const page = await pdfDoc.getPage(i);
+      const page = await pdfDoc.getPage(pageNumber);
       const base = page.getViewport({ scale: 1 });
       const viewport = page.getViewport({ scale: stageWidth / base.width });
       slot.style.height = `${Math.floor(viewport.height)}px`;
@@ -1083,7 +1087,19 @@ async function buildPdfPages() {
     } catch (error) {
       slot.style.height = '420px';
     }
+  }
+
+  const firstSlot = createPageSlot(1);
+  pdfViewerPages.appendChild(firstSlot);
+  await fillPageSlot(1, firstSlot);
+  renderPdfPageInto(firstSlot);
+
+  const restSlots = [];
+  for (let i = 2; i <= numPages; i += 1) {
+    const slot = createPageSlot(i);
     pdfViewerPages.appendChild(slot);
+    restSlots.push(slot);
+    fillPageSlot(i, slot);
   }
 
   const slots = Array.from(pdfViewerPages.querySelectorAll('.pdf-page-slot'));
@@ -1098,8 +1114,6 @@ async function buildPdfPages() {
   }, { root: pdfViewerStage, rootMargin: '300px 0px', threshold: 0.01 });
 
   slots.forEach((slot) => pdfPageObserver.observe(slot));
-  const firstPage = pdfViewerPages.querySelector('.pdf-page-slot');
-  if (firstPage) renderPdfPageInto(firstPage);
 }
 
 async function openPdfViewer(id) {
@@ -1156,19 +1170,15 @@ function prefersDesktop() {
 function openPdfForDevice(id) {
   const asset = state.assets.find((item) => item.id === id);
   if (!asset) return;
-  if (asset.previewOnly) {
-    openPdfViewer(id);
-    return;
-  }
-  if (prefersDesktop()) {
-    const url = new URL(asset.src, window.location.href).href;
-    window.open(url, '_blank', 'noopener');
-    return;
-  }
   openPdfViewer(id);
 }
 
 function openLightbox(id) {
+  const asset = state.assets.find((item) => item.id === id);
+  if (asset?.type === 'pdf' && !asset.previewOnly) {
+    openPdfViewer(id);
+    return;
+  }
   state.selectedId = id;
   state.inspectorOpen = true;
   state.lightboxId = id;
