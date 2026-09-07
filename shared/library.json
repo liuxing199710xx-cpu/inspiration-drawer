@@ -1,6 +1,22 @@
 {
   "assets": [
     {
+      "id": "upload-1788751099391-3",
+      "title": "AACA模板",
+      "src": "shared/media/upload-1788751099391-3.pdf",
+      "fileExt": "pdf",
+      "added": "2026-09-07",
+      "favorite": false,
+      "type": "pdf",
+      "folder": "视频案例",
+      "tags": [],
+      "poster": "shared/media/upload-1788751099391-3-poster.jpg",
+      "posterVersion": "pages-v1",
+      "ratio": "480 / 270",
+      "dimensions": "18 页 · 6.30 MB",
+      "notes": ""
+    },
+    {
       "id": "upload-1788750917521-2",
       "title": "2025AACA工作报告",
       "src": "shared/media/upload-1788750917521-2.pdf",
@@ -259,5 +275,5 @@
     "PDF 文档": null,
     "未分类": null
   },
-  "updatedAt": "2026-09-07T03:18:08.673Z"
+  "updatedAt": "2026-09-07T03:18:29.599Z"
 }
