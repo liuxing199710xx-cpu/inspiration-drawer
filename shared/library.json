@@ -25,15 +25,12 @@
       "favorite": false,
       "type": "pdf",
       "folder": "视频案例",
-      "tags": [
-        "新加入",
-        "PDF"
-      ],
+      "tags": [],
       "poster": "shared/media/upload-1788750917407-1-poster.jpg",
       "posterVersion": "pages-v1",
       "ratio": "480 / 270",
       "dimensions": "7 页 · 1.59 MB",
-      "notes": "从本地导入的 PDF 文档。"
+      "notes": ""
     },
     {
       "id": "upload-1788423623698-0",
@@ -262,5 +259,5 @@
     "PDF 文档": null,
     "未分类": null
   },
-  "updatedAt": "2026-09-07T03:15:43.675Z"
+  "updatedAt": "2026-09-07T03:15:54.689Z"
 }
